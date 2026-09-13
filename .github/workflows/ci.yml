@@ -5,6 +5,11 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  # By hand, as `gh workflow run ci.yml --ref main`. Without this, a run that
+  # GitHub never starts can only be replaced by pushing a commit: on 2026-09-13
+  # the run for f9a2614 sat queued with no jobs, cancel and force-cancel both
+  # refused it, and the deploy had no other way to happen.
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -57,7 +62,9 @@ jobs:
   deploy:
     name: Deploy to Cloudflare Pages
     needs: check
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # A manual run on main deploys too, or starting one by hand would test the
+    # site and never publish it, which is the case the trigger exists for.
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
