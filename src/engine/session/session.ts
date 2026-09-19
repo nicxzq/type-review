@@ -263,6 +263,8 @@ export class Session {
         : null;
     return {
       mode: this.activeMode,
+      language: this._profile.settings.language,
+      segments: this.passage?.segments ?? null,
       typing,
       liveMetrics: computeLiveMetrics({
         steps: textInput.steps,

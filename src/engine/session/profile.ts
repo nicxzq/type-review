@@ -11,6 +11,8 @@ export const DEFAULT_NO_BACKSPACE = false;
 export const DEFAULT_PASSAGE_LENGTH = "any" as const;
 export const DEFAULT_INCLUDE_NUMBERS = false;
 export const DEFAULT_INCLUDE_PUNCTUATION = false;
+export const DEFAULT_LANGUAGE = "en" as const;
+export const DEFAULT_PINYIN_SCHEME = "full" as const;
 
 /** The full settings object a fresh profile starts with. */
 export function defaultProfileSettings(): ProfileSettings {
@@ -26,6 +28,8 @@ export function defaultProfileSettings(): ProfileSettings {
     passageLength: DEFAULT_PASSAGE_LENGTH,
     includeNumbers: DEFAULT_INCLUDE_NUMBERS,
     includePunctuation: DEFAULT_INCLUDE_PUNCTUATION,
+    language: DEFAULT_LANGUAGE,
+    pinyinScheme: DEFAULT_PINYIN_SCHEME,
   };
 }
 

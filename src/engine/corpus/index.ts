@@ -18,4 +18,4 @@ export {
   makeEntry,
   pickWeightedByLength,
 } from "./sources";
-export type { Filter, Passage } from "./types";
+export type { Filter, InputSegment, Passage } from "./types";

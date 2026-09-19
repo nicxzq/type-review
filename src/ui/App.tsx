@@ -1,11 +1,13 @@
 import type { JSX } from "solid-js";
 import { createMemo, createSignal, onCleanup, Show } from "solid-js";
 import type { CorpusEntry } from "../engine/corpus";
-import type { ProfileSettings, Session } from "../engine/session";
+import type { PinyinScheme } from "../engine/pinyin";
+import type { Language, PassageLength, ProfileSettings, Session } from "../engine/session";
 import type { ProfileStore } from "../io";
 import {
   bundledCode,
   bundledQuotes,
+  createChineseSource,
   createCompositeCorpus,
   createCorpusSessionAdapter,
   createDifficultSource,
@@ -114,6 +116,38 @@ export function App(props: AppProps = {}): JSX.Element {
     onEntryPicked: setCurrentEntry,
   });
 
+  // Chinese corpus (language === "zh"). The user types pinyin keys; the hanzi
+  // ride along in the passage's `segments`. Kept behind a language dispatcher
+  // so the English composite above is completely untouched. `currentLanguage`
+  // mirrors the active profile setting so the benchmarkSource closure — called
+  // synchronously inside Session.start() on every run — knows which corpus to
+  // pull from without reaching into the not-yet-assigned `session` ref.
+  let currentLanguage: Language = "en";
+  let currentScheme: PinyinScheme = "full";
+  const chineseSource = createChineseSource(() => currentScheme);
+  const zhWantedChars = (passageLength: PassageLength): number => {
+    switch (passageLength) {
+      case "short":
+        return 40;
+      case "medium":
+        return 90;
+      case "long":
+        return 160;
+      case "any":
+        return 60;
+    }
+  };
+  const benchmarkSource: typeof corpusAdapter.benchmarkSource = (wordCount, opts) => {
+    if (currentLanguage === "zh") {
+      // Chinese runs have no per-entry English attribution card.
+      setCurrentEntry(null);
+      const passage = chineseSource.pick(zhWantedChars(opts.passageLength), Math.random);
+      if (passage) return passage;
+      // Empty corpus — fall through to the English generator so a run can start.
+    }
+    return corpusAdapter.benchmarkSource(wordCount, opts);
+  };
+
   const [loadBanner, setLoadBanner] = createSignal<LoadBanner>(null);
   const [saveBanner, setSaveBanner] = createSignal<SaveBanner>(null);
   const [runCrashed, setRunCrashed] = createSignal(false);
@@ -197,7 +231,16 @@ export function App(props: AppProps = {}): JSX.Element {
       logFailure("settings", new Error("validateSettings rejected the input"));
       return;
     }
-    session.updateSettings(validated);
+    // Chinese is benchmark-only in P1 — the adaptive letter-unlock curriculum
+    // is English. Coerce mode so a stale `adaptive` selection can't route the
+    // zh run through the (English) adaptive source.
+    const effective: ProfileSettings =
+      validated.language === "zh" && validated.mode !== "benchmark"
+        ? { ...validated, mode: "benchmark" }
+        : validated;
+    currentLanguage = effective.language;
+    currentScheme = effective.pinyinScheme;
+    session.updateSettings(effective);
     persist();
     // Settings is immediate-mode now — every control change calls this.
     // No navigation here; the user stays on the settings page until they
@@ -275,10 +318,23 @@ export function App(props: AppProps = {}): JSX.Element {
     bus: keyBus,
     setLoadBanner,
     adaptiveSource: corpusAdapter.adaptiveSource,
-    benchmarkSource: corpusAdapter.benchmarkSource,
+    benchmarkSource,
     onReady: (deps) => {
       session = deps.session;
       store = deps.store;
+      currentLanguage = session.profile.settings.language;
+      currentScheme = session.profile.settings.pinyinScheme;
+      // A saved zh profile: the Session constructor already sourced a run using
+      // the default `en` (currentLanguage wasn't set yet). Re-source now, and
+      // force benchmark mode since zh is benchmark-only in P1.
+      if (currentLanguage === "zh") {
+        const s = session.profile.settings;
+        if (s.mode !== "benchmark") {
+          session.updateSettings({ ...s, mode: "benchmark" });
+        } else {
+          session.start();
+        }
+      }
       view.attach(() => session.snapshot());
     },
     onResult: () => persist(),

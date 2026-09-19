@@ -21,10 +21,10 @@ export function About(props: AboutProps): JSX.Element {
 
       <section class="page__body">
         <nav class="hub" aria-label="info pages">
-          <a class="hub__card" href="#/site-stats">
-            <span class="hub__title">Site stats</span>
-            <span class="hub__sub">Pageviews, visitors, top referrers — last 30 days.</span>
-          </a>
+          {/* "Site stats" card removed for the self-hosted / Vercel deploy —
+              the /api/stats endpoint is a Cloudflare Pages Function that only
+              runs on type.review. The route still resolves (and degrades with
+              a clear message) if reached directly. */}
           <a class="hub__card" href="#/mac">
             <span class="hub__title">Mac app</span>
             <span class="hub__sub">Native, offline, with keyboard sound in every app.</span>

@@ -55,35 +55,8 @@ jobs:
           path: coverage/
           retention-days: 14
 
-  # Deploy only after `check` passes AND only for pushes to main —
-  # pull-request runs build + test but never publish, so untrusted forks
-  # cannot push to production. Secrets: CLOUDFLARE_API_TOKEN (scoped
-  # Account → Pages → Write), CLOUDFLARE_ACCOUNT_ID.
-  deploy:
-    name: Deploy to Cloudflare Pages
-    needs: check
-    # A manual run on main deploys too, or starting one by hand would test the
-    # site and never publish it, which is the case the trigger exists for.
-    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-        with:
-          version: 10
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm build
-      # v4 installs Wrangler v4 rather than v3 by default. `pages deploy` is
-      # unchanged between them; pin `wranglerVersion` here if that ever stops
-      # being true. The bump is not optional — v3 of this action runs on
-      # Node 20, which GitHub has deprecated.
-      - uses: cloudflare/wrangler-action@v4
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=type-review --branch=main --commit-dirty=true
+  # Deployment is handled by Vercel's Git integration (push → build → deploy),
+  # not GitHub Actions — see docs/deploy-vercel.md. The old Cloudflare Pages
+  # deploy job was removed for this fork: it needed CLOUDFLARE_* secrets this
+  # repo doesn't have, so on a fork it would only ever fail the CI run.
+  # CI here is purely a quality gate (typecheck · lint · test · build · coverage).

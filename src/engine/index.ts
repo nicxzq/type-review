@@ -31,7 +31,7 @@ export {
 export type { SettingBounds, SettingsBounds } from "./bounds";
 // --- bounds (cross-cutting validation policy) -----------------------------
 export { inBound, SETTINGS_BOUNDS, UI_BOUNDS } from "./bounds";
-export type { Filter, Passage, PlainWordsOptions, PseudoWordOptions } from "./corpus";
+export type { Filter, InputSegment, Passage, PlainWordsOptions, PseudoWordOptions } from "./corpus";
 // --- corpus ---------------------------------------------------------------
 export {
   analyzeText,
@@ -52,9 +52,13 @@ export {
   roundTo2,
   stdDev,
 } from "./metrics";
+export type { ChineseLayout, PinyinCell, PinyinScheme } from "./pinyin";
+// --- pinyin (Chinese layout) ----------------------------------------------
+export { buildChineseLayout, splitInitialFinal, toXiaohe } from "./pinyin";
 // --- rng ------------------------------------------------------------------
 export { mulberry32 } from "./rng";
 export type {
+  Language,
   Mode,
   Profile,
   ProfileSettings,

@@ -5,3 +5,10 @@ reference-repo/
 *.local
 .DS_Store
 .claude/
+
+# ui-tokenize: tokens.json is the catalog source and is committed; the rest is
+# generated from it (catalog) or session-local, and the root tokens.css/tokens.ts
+# are unused scaffold (the app's real tokens live in src/ui/tokens.css).
+.tokenize/
+/tokens.css
+/tokens.ts
