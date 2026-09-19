@@ -7,6 +7,8 @@ import { createSnapshotView } from "./use-snapshot";
 function makeSnapshot(netWpm: number): SessionSnapshot {
   return {
     mode: "adaptive",
+    language: "en",
+    segments: null,
     typing: {
       expected: "abc",
       statuses: ["untyped", "untyped", "untyped"],

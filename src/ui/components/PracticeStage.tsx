@@ -115,7 +115,18 @@ export function PracticeStage(props: PracticeStageProps): JSX.Element {
           }
         }}
       />
-      <TypingArea typing={props.snap.typing} showWhitespace={props.showWhitespace} />
+      <TypingArea
+        typing={props.snap.typing}
+        segments={props.snap.segments}
+        elapsedMs={props.snap.elapsedMs}
+        showWhitespace={props.showWhitespace}
+      />
+
+      <Show when={props.snap.language === "zh"}>
+        <p class="cjk-ime-hint">
+          type the pinyin shown above each character · turn your system IME off (English keyboard)
+        </p>
+      </Show>
 
       <Show when={props.snap.remainingSec !== null}>
         <output class="countdown" aria-label="time remaining">
@@ -143,12 +154,16 @@ export function PracticeStage(props: PracticeStageProps): JSX.Element {
 
       <div class="practice-hints">
         <div class="practice-hints__row">
-          <InlineSegRadio
-            label="source"
-            options={SOURCE_OPTIONS}
-            value={props.corpusChannel}
-            onChange={props.onCorpusChannelChange}
-          />
+          {/* Source picker is English-only — Chinese always pulls from the zh
+              corpus, selected via the language setting, not this channel. */}
+          <Show when={props.snap.language === "en"}>
+            <InlineSegRadio
+              label="source"
+              options={SOURCE_OPTIONS}
+              value={props.corpusChannel}
+              onChange={props.onCorpusChannelChange}
+            />
+          </Show>
           <InlineSegRadio
             label="sound"
             options={SOUND_OPTIONS}
@@ -171,7 +186,11 @@ export function PracticeStage(props: PracticeStageProps): JSX.Element {
               {keyboard.visible() ? "hide keyboard" : "show keyboard"}
             </button>
           </Show>
-          <CustomTextInline onSubmit={props.onCustomText} />
+          {/* Custom text is raw-typed English; it has no pinyin mapping, so
+              hide it in Chinese mode. */}
+          <Show when={props.snap.language === "en"}>
+            <CustomTextInline onSubmit={props.onCustomText} />
+          </Show>
         </div>
       </div>
     </main>

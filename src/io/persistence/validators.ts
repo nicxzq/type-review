@@ -47,6 +47,8 @@ const ALLOWED_SETTINGS_KEYS: ReadonlySet<string> = new Set([
   "adaptive",
   "includeNumbers",
   "includePunctuation",
+  "language",
+  "pinyinScheme",
 ]);
 
 /**
@@ -127,6 +129,19 @@ export function validateSettings(raw: unknown): ProfileSettings | null {
   ) {
     return null;
   }
+  // `language` / `pinyinScheme` are optional for forward-compat with profiles
+  // written before Chinese support — default sensibly on absence, reject on
+  // wrong value.
+  if (raw.language !== undefined && raw.language !== "en" && raw.language !== "zh") {
+    return null;
+  }
+  if (
+    raw.pinyinScheme !== undefined &&
+    raw.pinyinScheme !== "full" &&
+    raw.pinyinScheme !== "xiaohe"
+  ) {
+    return null;
+  }
   if (
     !inBound(raw.targetWpm, SETTINGS_BOUNDS.targetWpm) ||
     !inBound(raw.wordCount, SETTINGS_BOUNDS.wordCount) ||
@@ -146,6 +161,8 @@ export function validateSettings(raw: unknown): ProfileSettings | null {
     passageLength: (raw.passageLength as "any" | "short" | "medium" | "long" | undefined) ?? "any",
     includeNumbers: raw.includeNumbers ?? false,
     includePunctuation: raw.includePunctuation ?? false,
+    language: (raw.language as "en" | "zh" | undefined) ?? "en",
+    pinyinScheme: (raw.pinyinScheme as "full" | "xiaohe" | undefined) ?? "full",
     adaptive: {
       minAlphabetSize: raw.adaptive.minAlphabetSize,
       alphabetExpansion: raw.adaptive.alphabetExpansion,

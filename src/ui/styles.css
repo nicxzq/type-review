@@ -2065,3 +2065,107 @@ kbd {
   margin-top: var(--space-2);
 }
 
+
+/* ─────────────────────────────────────────────────────────────
+ * Chinese typing surface (language === "zh")
+ * The user types pinyin; each hanzi is shown as a block with its
+ * pinyin keys annotated above and coloured per-letter by the same
+ * correct/incorrect/current status the Latin surface uses.
+ * ───────────────────────────────────────────────────────────── */
+.typing-area--cjk {
+  /* Block layout replaces the inline char stream; drop the mono
+   * inline assumptions but keep the reserved region + centering. */
+  white-space: normal;
+  user-select: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  align-items: center;
+}
+
+.cjk-status {
+  display: flex;
+  gap: var(--space-4);
+  align-items: baseline;
+  font-family: var(--font-mono);
+  font-size: var(--fs-13);
+  color: var(--color-muted);
+}
+.cjk-status__cpm {
+  color: var(--color-accent);
+}
+
+.cjk-cells {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-3) var(--space-4);
+  max-width: 60ch;
+}
+
+.cjk-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--r-3);
+  border-bottom: var(--bw-2) solid transparent;
+  transition: border-color var(--dur-fast) var(--ease-out);
+}
+/* The hanzi whose pinyin the user is currently typing. */
+.cjk-cell--active {
+  border-bottom-color: var(--color-accent);
+  background: var(--color-accent-area);
+}
+/* A hanzi whose pinyin has been fully typed. */
+.cjk-cell--done .cjk-cell__hanzi {
+  color: var(--color-text);
+}
+
+.cjk-cell__pinyin {
+  font-family: var(--font-mono);
+  font-variant-ligatures: none;
+  font-size: var(--fs-14);
+  letter-spacing: 0.02em;
+  line-height: var(--lh-tight);
+  color: var(--color-dim);
+  min-height: 1.2em;
+}
+.cjk-cell__hanzi {
+  font-family: var(--font-sans);
+  font-size: var(--fs-32);
+  line-height: var(--lh-tight);
+  color: var(--color-muted);
+}
+
+/* Per-letter pinyin status — mirrors .char--correct / --incorrect / --current. */
+.cjk-py {
+  transition: color var(--dur-instant) var(--ease-out);
+}
+.cjk-py--correct {
+  color: var(--color-text);
+}
+.cjk-py--incorrect {
+  color: var(--color-error);
+}
+.cjk-py--current {
+  color: var(--color-accent);
+  border-bottom: var(--bw-2) solid var(--color-accent);
+}
+
+.cjk-ime-hint {
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: var(--fs-12);
+  color: var(--color-muted);
+  margin-top: var(--space-2);
+}
+
+/* 小鹤双拼: the full pinyin shown muted below the hanzi (keys are above). */
+.cjk-cell__note {
+  font-family: var(--font-mono);
+  font-size: var(--fs-11);
+  color: var(--color-dim);
+  line-height: var(--lh-tight);
+}

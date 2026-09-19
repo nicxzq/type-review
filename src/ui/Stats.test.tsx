@@ -36,6 +36,8 @@ function profile(results: RunResult[]): Profile {
       adaptive: { minAlphabetSize: 6, alphabetExpansion: 0 },
       includeNumbers: false,
       includePunctuation: false,
+      language: "en",
+      pinyinScheme: "full",
       testMode: "words" as const,
       testDurationSec: 30,
       noBackspace: false,

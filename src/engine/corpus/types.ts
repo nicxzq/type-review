@@ -11,6 +11,32 @@ export interface Filter {
   focus: string | null;
 }
 
+/**
+ * A range of the typed `text` that forms one logical display unit, decoupling
+ * "what is displayed" from "what is typed". Latin passages leave this unset
+ * (one span per character is the default render). Chinese passages set one
+ * segment per hanzi: `[start, end)` covers that hanzi's pinyin keys, `display`
+ * is the hanzi, `hint` is the pinyin shown above it.
+ *
+ * The engine stays script-agnostic — it only knows key ranges and opaque
+ * display/hint strings. Filling `display`/`hint` with hanzi/pinyin is the io
+ * layer's job; the same abstraction can later drive word-level highlighting for
+ * Latin text.
+ */
+export interface InputSegment {
+  readonly start: number;
+  readonly end: number;
+  readonly display?: string;
+  /** Primary label above the segment — the exact keys typed for this unit. */
+  readonly hint?: string;
+  /**
+   * Secondary muted label. For 小鹤 double-pinyin the `hint` is the two typed
+   * keys while `note` carries the full pinyin so the reading is still visible.
+   * Unset for full pinyin (the hint already is the full pinyin).
+   */
+  readonly note?: string;
+}
+
 /** A pre-tagged unit of practice text. */
 export interface Passage {
   id: string;
@@ -23,4 +49,9 @@ export interface Passage {
   keyHistogram: Readonly<Record<string, number>>;
   /** Sum of keyHistogram values — total typeable letters in `text`. */
   letterCount: number;
+  /**
+   * Optional display segments over `text` (see {@link InputSegment}). Present
+   * for Chinese passages (one per hanzi); absent for Latin passages.
+   */
+  segments?: readonly InputSegment[];
 }

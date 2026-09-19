@@ -10,6 +10,7 @@ export {
 } from "./profile";
 export { MAX_HISTORY, Session } from "./session";
 export type {
+  Language,
   Mode,
   PassageLength,
   Profile,

@@ -1,4 +1,4 @@
-import type { Passage } from "./types";
+import type { InputSegment, Passage } from "./types";
 
 const LETTER = /\p{Letter}/u;
 
@@ -20,11 +20,15 @@ export function analyzeText(text: string): {
   return { keyHistogram, letterCount };
 }
 
-/** Builds a fully tagged Passage from raw text. */
-export function makePassage(id: string, text: string): Passage {
+/**
+ * Builds a fully tagged Passage from raw text. `segments` is optional — pass it
+ * for Chinese passages (one display segment per hanzi over the pinyin `text`);
+ * omit it for Latin passages, which render one span per character.
+ */
+export function makePassage(id: string, text: string, segments?: readonly InputSegment[]): Passage {
   if (text.length === 0) {
     throw new Error("passage text must be non-empty");
   }
   const { keyHistogram, letterCount } = analyzeText(text);
-  return { id, text, keyHistogram, letterCount };
+  return { id, text, keyHistogram, letterCount, ...(segments ? { segments } : {}) };
 }

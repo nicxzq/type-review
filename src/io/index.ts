@@ -11,6 +11,8 @@ export {
   createDrillsSource,
   createUserSource,
 } from "./corpus/channels";
+export type { ChineseSource, RawZhEntry } from "./corpus/chinese";
+export { createChineseSource, ZH_ENTRIES } from "./corpus/chinese";
 export { cleaningNote } from "./corpus/cleaning-note";
 export type { RawCode } from "./corpus/code";
 export { createCodeSource } from "./corpus/code";

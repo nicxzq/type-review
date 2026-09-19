@@ -1,9 +1,17 @@
 import type { AdaptiveSettings, Histogram, LessonPlan } from "../adaptive";
-import type { Filter, Passage } from "../corpus";
+import type { Filter, InputSegment, Passage } from "../corpus";
 import type { RunMetrics } from "../metrics";
+import type { PinyinScheme } from "../pinyin";
 import type { TypingSnapshot } from "../typing";
 
 export type Mode = "adaptive" | "benchmark";
+
+/**
+ * Practice language. `en` is the original Latin-alphabet path. `zh` sources
+ * Chinese passages and drives the pinyin-annotated typing surface; the user
+ * still types Latin pinyin keys, so the whole hot loop is unchanged.
+ */
+export type Language = "en" | "zh";
 
 /** A completed run — the persisted source of truth; per-key stats are derived from these. */
 export interface RunResult {
@@ -69,6 +77,17 @@ export interface ProfileSettings {
    * those punctuation marks; pseudo-words can interleave them too.
    */
   includePunctuation: boolean;
+  /**
+   * Practice language. `zh` switches the corpus to Chinese passages and the
+   * pinyin-annotated typing surface; the app forces benchmark mode in `zh`
+   * (the adaptive letter-unlock curriculum is English-only in P1).
+   */
+  language: Language;
+  /**
+   * Pinyin input scheme for `zh`. P1 honours `full` only; `xiaohe`
+   * (double-pinyin) is reserved for P1b. Ignored when `language === "en"`.
+   */
+  pinyinScheme: PinyinScheme;
 }
 
 export interface Profile {
@@ -79,6 +98,14 @@ export interface Profile {
 
 export interface SessionSnapshot {
   mode: Mode;
+  /** Active practice language — the UI switches the typing surface on this. */
+  language: Language;
+  /**
+   * Display segments over `typing.expected` for the active passage, or null for
+   * Latin passages. When present (Chinese), the UI renders one hanzi block per
+   * segment with its pinyin hint above.
+   */
+  segments: readonly InputSegment[] | null;
   typing: TypingSnapshot;
   /** Metrics computed from the run so far. */
   liveMetrics: RunMetrics;

@@ -20,6 +20,8 @@ function initial(): ProfileSettings {
     adaptive: { minAlphabetSize: 6, alphabetExpansion: 0 },
     includeNumbers: false,
     includePunctuation: false,
+    language: "en",
+    pinyinScheme: "full",
   };
 }
 

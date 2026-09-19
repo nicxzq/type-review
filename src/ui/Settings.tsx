@@ -1,7 +1,8 @@
 import type { JSX } from "solid-js";
 import { createSignal, Show } from "solid-js";
 import { UI_BOUNDS } from "../engine/bounds";
-import type { Mode, PassageLength, ProfileSettings, TestMode } from "../engine/session";
+import type { PinyinScheme } from "../engine/pinyin";
+import type { Language, Mode, PassageLength, ProfileSettings, TestMode } from "../engine/session";
 import { KEY_SOUND_PACKS } from "../io";
 import type { KeyboardLayoutName } from "./components/keyboard-layouts";
 import type { KeyMap } from "./components/keymaps";
@@ -11,6 +12,14 @@ import type { Theme } from "./theme";
 const WORD_COUNTS = [10, 25, 30, 50] as const;
 type WordCount = (typeof WORD_COUNTS)[number];
 
+const LANGUAGE_OPTIONS = [
+  { value: "en" as Language, label: "english" },
+  { value: "zh" as Language, label: "中文" },
+];
+const PINYIN_SCHEME_OPTIONS = [
+  { value: "full" as PinyinScheme, label: "全拼" },
+  { value: "xiaohe" as PinyinScheme, label: "小鹤双拼" },
+];
 const MODE_OPTIONS = [
   { value: "adaptive" as Mode, label: "adaptive" },
   { value: "benchmark" as Mode, label: "benchmark" },
@@ -109,6 +118,10 @@ export function Settings(props: SettingsProps): JSX.Element {
   // Local signals are the UI source of truth for the practice section.
   // `props.initial` is captured at mount and won't auto-react to session
   // updates, so we mirror it here and propagate every change up.
+  const [language, setLanguageSignal] = createSignal<Language>(props.initial.language);
+  const [pinyinScheme, setPinyinSchemeSignal] = createSignal<PinyinScheme>(
+    props.initial.pinyinScheme,
+  );
   const [mode, setModeSignal] = createSignal<Mode>(props.initial.mode);
   const [targetWpm, setTargetWpmSignal] = createSignal(props.initial.targetWpm);
   const [wordCount, setWordCountSignal] = createSignal<WordCount>(
@@ -134,6 +147,8 @@ export function Settings(props: SettingsProps): JSX.Element {
   const applyAll = (): void => {
     props.onSave({
       ...props.initial,
+      language: language(),
+      pinyinScheme: pinyinScheme(),
       mode: mode(),
       targetWpm: clamp(
         targetWpm(),
@@ -160,6 +175,14 @@ export function Settings(props: SettingsProps): JSX.Element {
   };
 
   // Every setter mirrors the signal and re-applies the full settings.
+  const setLanguage = (next: Language): void => {
+    setLanguageSignal(next);
+    applyAll();
+  };
+  const setPinyinScheme = (next: PinyinScheme): void => {
+    setPinyinSchemeSignal(next);
+    applyAll();
+  };
   const setMode = (next: Mode): void => {
     setModeSignal(next);
     applyAll();
@@ -262,39 +285,79 @@ export function Settings(props: SettingsProps): JSX.Element {
                   session
                 </h3>
                 <div class="field">
-                  <span id="lbl-mode" class="field__label">
-                    mode
+                  <span id="lbl-language" class="field__label">
+                    language
                   </span>
                   <RadioGroup
-                    name="mode"
-                    labelledBy="lbl-mode"
-                    options={MODE_OPTIONS}
-                    value={mode()}
-                    onChange={setMode}
+                    name="language"
+                    labelledBy="lbl-language"
+                    options={LANGUAGE_OPTIONS}
+                    value={language()}
+                    onChange={setLanguage}
                     orientation="row"
                   />
                   <p class="field__hint">
-                    adaptive drills your weak keys. benchmark is a plain timed test.
+                    中文 practises typing pinyin — the hanzi shows its pinyin above. Type the pinyin
+                    with an English keyboard (turn your system IME off).
                   </p>
                 </div>
 
-                <div class="field">
-                  <label class="field__label" for="target-wpm">
-                    target speed (wpm)
-                  </label>
-                  <input
-                    id="target-wpm"
-                    class="field__input"
-                    type="number"
-                    min={UI_BOUNDS.targetWpm.lo}
-                    max={UI_BOUNDS.targetWpm.hi}
-                    value={targetWpm()}
-                    // Fires on blur / Enter so we don't snap intermediate digits
-                    // through clamp on every keystroke as the user types "120".
-                    onChange={(event) => setTargetWpm(event.currentTarget.valueAsNumber)}
-                  />
-                  <p class="field__hint">the speed a key must reach to count as mastered.</p>
-                </div>
+                <Show when={language() === "zh"}>
+                  <div class="field">
+                    <span id="lbl-pinyin-scheme" class="field__label">
+                      pinyin scheme
+                    </span>
+                    <RadioGroup
+                      name="pinyinScheme"
+                      labelledBy="lbl-pinyin-scheme"
+                      options={PINYIN_SCHEME_OPTIONS}
+                      value={pinyinScheme()}
+                      onChange={setPinyinScheme}
+                      orientation="row"
+                    />
+                    <p class="field__hint">
+                      全拼 = type the whole pinyin. 小鹤双拼 = two keys per character; the full
+                      pinyin stays shown below the keys.
+                    </p>
+                  </div>
+                </Show>
+
+                <Show when={language() === "en"}>
+                  <div class="field">
+                    <span id="lbl-mode" class="field__label">
+                      mode
+                    </span>
+                    <RadioGroup
+                      name="mode"
+                      labelledBy="lbl-mode"
+                      options={MODE_OPTIONS}
+                      value={mode()}
+                      onChange={setMode}
+                      orientation="row"
+                    />
+                    <p class="field__hint">
+                      adaptive drills your weak keys. benchmark is a plain timed test.
+                    </p>
+                  </div>
+
+                  <div class="field">
+                    <label class="field__label" for="target-wpm">
+                      target speed (wpm)
+                    </label>
+                    <input
+                      id="target-wpm"
+                      class="field__input"
+                      type="number"
+                      min={UI_BOUNDS.targetWpm.lo}
+                      max={UI_BOUNDS.targetWpm.hi}
+                      value={targetWpm()}
+                      // Fires on blur / Enter so we don't snap intermediate digits
+                      // through clamp on every keystroke as the user types "120".
+                      onChange={(event) => setTargetWpm(event.currentTarget.valueAsNumber)}
+                    />
+                    <p class="field__hint">the speed a key must reach to count as mastered.</p>
+                  </div>
+                </Show>
 
                 <div class="field">
                   <span id="lbl-test-mode" class="field__label">
@@ -383,33 +446,35 @@ export function Settings(props: SettingsProps): JSX.Element {
                 </div>
               </fieldset>
 
-              <fieldset class="subsection" aria-labelledby="sub-alphabet">
-                <h3 id="sub-alphabet" class="label">
-                  alphabet
-                </h3>
-                <div class="field-group">
-                  <label class="field__checkbox">
-                    <input
-                      type="checkbox"
-                      checked={includeNumbers()}
-                      onChange={(event) => setIncludeNumbers(event.currentTarget.checked)}
-                    />
-                    <span>include numbers in the adaptive alphabet</span>
-                  </label>
-                  <label class="field__checkbox">
-                    <input
-                      type="checkbox"
-                      checked={includePunctuation()}
-                      onChange={(event) => setIncludePunctuation(event.currentTarget.checked)}
-                    />
-                    <span>include punctuation in the adaptive alphabet</span>
-                  </label>
-                  <p class="field__hint">
-                    drill content (pseudo-words) honours these toggles; curated sources (quotes /
-                    codes / mine) always pass through with their natural punctuation and digits.
-                  </p>
-                </div>
-              </fieldset>
+              <Show when={language() === "en"}>
+                <fieldset class="subsection" aria-labelledby="sub-alphabet">
+                  <h3 id="sub-alphabet" class="label">
+                    alphabet
+                  </h3>
+                  <div class="field-group">
+                    <label class="field__checkbox">
+                      <input
+                        type="checkbox"
+                        checked={includeNumbers()}
+                        onChange={(event) => setIncludeNumbers(event.currentTarget.checked)}
+                      />
+                      <span>include numbers in the adaptive alphabet</span>
+                    </label>
+                    <label class="field__checkbox">
+                      <input
+                        type="checkbox"
+                        checked={includePunctuation()}
+                        onChange={(event) => setIncludePunctuation(event.currentTarget.checked)}
+                      />
+                      <span>include punctuation in the adaptive alphabet</span>
+                    </label>
+                    <p class="field__hint">
+                      drill content (pseudo-words) honours these toggles; curated sources (quotes /
+                      codes / mine) always pass through with their natural punctuation and digits.
+                    </p>
+                  </div>
+                </fieldset>
+              </Show>
             </section>
           </Show>
 
