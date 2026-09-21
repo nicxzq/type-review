@@ -2,11 +2,12 @@ import type { InputSegment } from "../corpus";
 
 /**
  * Pinyin input scheme. `full` = type the whole romanisation (zhong → z h o n g).
- * `xiaohe` = 小鹤 double-pinyin (two keys per syllable). P1 implements `full`
- * only; the enum carries `xiaohe` so settings/persistence are forward-compatible
- * and the P1b double-pinyin work is a drop-in.
+ * `xiaohe` = 小鹤 double-pinyin, `ziranma` = 自然码 double-pinyin — both are two
+ * keys per syllable, differing only in the key layout. The double-pinyin
+ * schemes share a display treatment (hanzi + full-pinyin `note` + two typed
+ * keys); only the flat key string differs per scheme.
  */
-export type PinyinScheme = "full" | "xiaohe";
+export type PinyinScheme = "full" | "xiaohe" | "ziranma";
 
 /**
  * One Chinese display unit: a single hanzi and its canonical romanisation.

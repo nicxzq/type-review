@@ -29,6 +29,7 @@ function makeSnapshot(netWpm: number): SessionSnapshot {
     elapsedMs: 0,
     remainingSec: null,
     plan: null,
+    zhPlan: null,
     lastResult: null,
   };
 }

@@ -13,6 +13,7 @@ export const DEFAULT_INCLUDE_NUMBERS = false;
 export const DEFAULT_INCLUDE_PUNCTUATION = false;
 export const DEFAULT_LANGUAGE = "en" as const;
 export const DEFAULT_PINYIN_SCHEME = "full" as const;
+export const DEFAULT_CONFUSION_DRILL = "off" as const;
 
 /** The full settings object a fresh profile starts with. */
 export function defaultProfileSettings(): ProfileSettings {
@@ -30,6 +31,7 @@ export function defaultProfileSettings(): ProfileSettings {
     includePunctuation: DEFAULT_INCLUDE_PUNCTUATION,
     language: DEFAULT_LANGUAGE,
     pinyinScheme: DEFAULT_PINYIN_SCHEME,
+    confusionDrill: DEFAULT_CONFUSION_DRILL,
   };
 }
 

@@ -1,5 +1,7 @@
 import type { BigramHit, Histogram } from "../../engine/adaptive";
 import type { RunMetrics } from "../../engine/metrics";
+import type { ConfusionKind, ConfusionTally } from "../../engine/pinyin";
+import { CONFUSION_KINDS } from "../../engine/pinyin";
 import type { Profile, RunResult } from "../../engine/session";
 import {
   ALLOWED_METRICS_KEYS,
@@ -40,6 +42,8 @@ export function serializeProfile(profile: Profile): SerializedProfile {
         text: result.text,
         metrics: { ...result.metrics },
         histogram: Object.fromEntries(result.histogram),
+        ...(result.confusions ? { confusions: result.confusions } : {}),
+        ...(result.syllableTimes ? { syllableTimes: { ...result.syllableTimes } } : {}),
       }),
     ),
   };
@@ -162,6 +166,55 @@ function parseHistogram(raw: unknown): Histogram | null {
   return map;
 }
 
+/** Longest confusion-hit list kept from a stored blob — bounds parse work. */
+const MAX_CONFUSION_HITS = 2000;
+const CONFUSION_KIND_SET: ReadonlySet<string> = new Set(CONFUSION_KINDS);
+
+/**
+ * Parse a stored confusion tally. Unlike the histogram, this is *display-only*
+ * data (no adaptive input), so a malformed blob degrades to `undefined` rather
+ * than failing the whole load — losing one run's confusion breakdown is a far
+ * smaller harm than losing the entire history.
+ */
+function parseConfusions(raw: unknown): ConfusionTally | undefined {
+  if (!isObject(raw) || !isObject(raw.counts) || !Array.isArray(raw.hits)) {
+    return undefined;
+  }
+  const counts: Record<ConfusionKind, number> = { nasal: 0, retroflex: 0, nl: 0 };
+  for (const kind of CONFUSION_KINDS) {
+    const value = (raw.counts as Record<string, unknown>)[kind];
+    if (!isNonNegativeInteger(value, Number.MAX_SAFE_INTEGER)) return undefined;
+    counts[kind] = value;
+  }
+  const hits: Array<{ expected: string; kind: ConfusionKind }> = [];
+  for (const hit of raw.hits.slice(0, MAX_CONFUSION_HITS)) {
+    if (
+      !isObject(hit) ||
+      typeof hit.expected !== "string" ||
+      typeof hit.kind !== "string" ||
+      !CONFUSION_KIND_SET.has(hit.kind)
+    ) {
+      return undefined;
+    }
+    hits.push({ expected: hit.expected, kind: hit.kind as ConfusionKind });
+  }
+  return { counts, hits };
+}
+
+function parseSyllableTimes(raw: unknown): Record<string, number> | undefined {
+  if (!isObject(raw)) return undefined;
+  const entries = Object.entries(raw);
+  if (entries.length > MAX_HISTOGRAM_ENTRIES) return undefined;
+  const result: Record<string, number> = {};
+  for (const [pinyin, timeToType] of entries) {
+    if (!/^[a-z]+$/.test(pinyin) || !isInRange(timeToType, 1, MAX_TIME_TO_TYPE_MS)) {
+      return undefined;
+    }
+    result[pinyin] = timeToType;
+  }
+  return result;
+}
+
 function parseResult(raw: unknown): RunResult | null {
   if (!isObject(raw) || !hasOnlyAllowedKeys(raw, ALLOWED_RESULT_KEYS)) {
     return null;
@@ -189,6 +242,9 @@ function parseResult(raw: unknown): RunResult | null {
   if (histogram === null) {
     return null;
   }
+  const confusions = raw.confusions === undefined ? undefined : parseConfusions(raw.confusions);
+  const syllableTimes =
+    raw.syllableTimes === undefined ? undefined : parseSyllableTimes(raw.syllableTimes);
   return {
     index: raw.index,
     mode: raw.mode,
@@ -197,6 +253,8 @@ function parseResult(raw: unknown): RunResult | null {
     text: raw.text,
     metrics,
     histogram,
+    ...(confusions ? { confusions } : {}),
+    ...(syllableTimes ? { syllableTimes } : {}),
   };
 }
 

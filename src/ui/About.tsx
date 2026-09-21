@@ -123,8 +123,8 @@ export function About(props: AboutProps): JSX.Element {
         <h3>Source</h3>
         <p>
           MIT-licensed. Repository:{" "}
-          <a href="https://github.com/xiaolai/type-review" rel="noopener">
-            github.com/xiaolai/type-review
+          <a href="https://github.com/nicxzq/type-review" rel="noopener">
+            github.com/nicxzq/type-review
           </a>
           .
         </p>

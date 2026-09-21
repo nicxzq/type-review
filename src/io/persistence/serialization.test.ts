@@ -15,6 +15,7 @@ function sampleProfile(): Profile {
       includePunctuation: false,
       language: "en",
       pinyinScheme: "full",
+      confusionDrill: "off",
       testMode: "words" as const,
       testDurationSec: 30,
       noBackspace: false,
@@ -270,6 +271,106 @@ describe("deserializeProfile — adversarial input (storage is an untrusted boun
     if (result.status === "ok") {
       expect(result.profile.results.length).toBeLessThanOrEqual(total);
       expect(result.profile.results.at(-1)?.index).toBe(total - 1);
+    }
+  });
+});
+
+describe("confusion tally round-trip", () => {
+  function zhProfile(): Profile {
+    const p = sampleProfile();
+    const r = p.results[0];
+    if (r) {
+      r.confusions = {
+        counts: { nasal: 2, retroflex: 1, nl: 0 },
+        hits: [
+          { expected: "min", kind: "nasal" },
+          { expected: "si", kind: "retroflex" },
+        ],
+      };
+    }
+    return p;
+  }
+
+  it("serializes and restores a run's confusion tally", () => {
+    const serialized = serializeProfile(zhProfile());
+    expect(serialized.results[0]?.confusions?.counts).toEqual({ nasal: 2, retroflex: 1, nl: 0 });
+    const round = deserializeProfile(JSON.parse(JSON.stringify(serialized)));
+    expect(round.status).toBe("ok");
+    if (round.status === "ok") {
+      expect(round.profile.results[0]?.confusions?.counts).toEqual({
+        nasal: 2,
+        retroflex: 1,
+        nl: 0,
+      });
+      expect(round.profile.results[0]?.confusions?.hits).toContainEqual({
+        expected: "min",
+        kind: "nasal",
+      });
+    }
+  });
+
+  it("leaves confusions undefined for a legacy (Latin) result with no such field", () => {
+    const serialized = serializeProfile(sampleProfile());
+    expect(serialized.results[0]?.confusions).toBeUndefined();
+    const round = deserializeProfile(JSON.parse(JSON.stringify(serialized)));
+    expect(round.status).toBe("ok");
+    if (round.status === "ok") {
+      expect(round.profile.results[0]?.confusions).toBeUndefined();
+    }
+  });
+
+  it("degrades a malformed confusions blob to undefined rather than failing the load", () => {
+    const serialized = serializeProfile(zhProfile());
+    const json = JSON.parse(JSON.stringify(serialized)) as ReturnType<typeof serializeProfile>;
+    // biome-ignore lint/suspicious/noExplicitAny: deliberately corrupting the blob
+    (json.results[0] as any).confusions = { counts: "nope" };
+    const round = deserializeProfile(json);
+    expect(round.status).toBe("ok");
+    if (round.status === "ok") {
+      expect(round.profile.results[0]?.confusions).toBeUndefined();
+    }
+  });
+});
+
+describe("syllable timing round-trip", () => {
+  function zhProfile(): Profile {
+    const p = sampleProfile();
+    const r = p.results[0];
+    if (r) {
+      r.syllableTimes = { zhong: 120, guo: 180 };
+    }
+    return p;
+  }
+
+  it("serializes and restores per-syllable timings", () => {
+    const serialized = serializeProfile(zhProfile());
+    expect(serialized.results[0]?.syllableTimes).toEqual({ zhong: 120, guo: 180 });
+    const round = deserializeProfile(JSON.parse(JSON.stringify(serialized)));
+    expect(round.status).toBe("ok");
+    if (round.status === "ok") {
+      expect(round.profile.results[0]?.syllableTimes).toEqual({ zhong: 120, guo: 180 });
+    }
+  });
+
+  it("leaves syllableTimes undefined for a legacy result with no such field", () => {
+    const serialized = serializeProfile(sampleProfile());
+    expect(serialized.results[0]?.syllableTimes).toBeUndefined();
+    const round = deserializeProfile(JSON.parse(JSON.stringify(serialized)));
+    expect(round.status).toBe("ok");
+    if (round.status === "ok") {
+      expect(round.profile.results[0]?.syllableTimes).toBeUndefined();
+    }
+  });
+
+  it("degrades malformed syllable timings to undefined rather than failing the load", () => {
+    const serialized = serializeProfile(zhProfile());
+    const json = JSON.parse(JSON.stringify(serialized)) as ReturnType<typeof serializeProfile>;
+    // biome-ignore lint/suspicious/noExplicitAny: deliberately corrupting the blob
+    (json.results[0] as any).syllableTimes = { zhong: "slow" };
+    const round = deserializeProfile(json);
+    expect(round.status).toBe("ok");
+    if (round.status === "ok") {
+      expect(round.profile.results[0]?.syllableTimes).toBeUndefined();
     }
   });
 });

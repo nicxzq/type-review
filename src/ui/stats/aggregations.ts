@@ -9,6 +9,8 @@
  */
 
 import type { BigramHit, Histogram } from "../../engine/adaptive";
+import type { ConfusionKind } from "../../engine/pinyin";
+import { CONFUSION_KINDS } from "../../engine/pinyin";
 import type { RunResult } from "../../engine/session";
 import type { ChannelName } from "../../io";
 import { classifyPassageId } from "../../io";
@@ -495,6 +497,39 @@ export function wpmDistribution(results: readonly RunResult[], binSize = 5): Wpm
     if (target) target.count++;
   }
   return bins;
+}
+
+/** Cross-run confusion summary — per-family totals plus the worst syllables. */
+export interface ConfusionSummary {
+  counts: Record<ConfusionKind, number>;
+  /** Sum across all families — 0 means no Chinese-confusion data to show. */
+  total: number;
+  /** Most-confused syllables (by expected pinyin), most-frequent first, capped. */
+  topSyllables: Array<{ expected: string; count: number }>;
+}
+
+/**
+ * Aggregate every run's confusion tally into per-family totals and a ranked
+ * list of the most-confused syllables. Runs without a tally (Latin, or older
+ * records) contribute nothing. Pure and total — empty history yields zeros.
+ */
+export function confusionTotals(results: readonly RunResult[], topN = 8): ConfusionSummary {
+  const counts: Record<ConfusionKind, number> = { nasal: 0, retroflex: 0, nl: 0 };
+  const perSyllable = new Map<string, number>();
+  for (const r of results) {
+    const tally = r.confusions;
+    if (tally === undefined) continue;
+    for (const kind of CONFUSION_KINDS) counts[kind] += tally.counts[kind];
+    for (const hit of tally.hits) {
+      perSyllable.set(hit.expected, (perSyllable.get(hit.expected) ?? 0) + 1);
+    }
+  }
+  const total = CONFUSION_KINDS.reduce((sum, kind) => sum + counts[kind], 0);
+  const topSyllables = [...perSyllable.entries()]
+    .map(([expected, count]) => ({ expected, count }))
+    .sort((a, b) => b.count - a.count || a.expected.localeCompare(b.expected))
+    .slice(0, topN);
+  return { counts, total, topSyllables };
 }
 
 export type { BigramHit }; // re-export for callers that don't depend on engine.

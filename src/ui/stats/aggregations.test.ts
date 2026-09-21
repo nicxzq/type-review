@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
+import type { ConfusionTally } from "../../engine/pinyin";
 import type { RunResult } from "../../engine/session";
 import {
   aggregatePerKey,
   byChannel,
   channelOf,
+  confusionTotals,
   dailyCounts,
   slowestBigrams,
   streak,
@@ -202,6 +204,44 @@ describe("wpmDistribution", () => {
 
   it("returns [] for empty input", () => {
     expect(wpmDistribution([], 5)).toEqual([]);
+  });
+});
+
+describe("confusionTotals", () => {
+  function withConfusions(index: number, confusions: ConfusionTally): RunResult {
+    return { ...makeResult({ index, timestamp: index, netWpm: 40 }), confusions };
+  }
+
+  it("returns zero totals for runs with no confusion data", () => {
+    const summary = confusionTotals([makeResult({ index: 0, timestamp: 0, netWpm: 40 })]);
+    expect(summary.total).toBe(0);
+    expect(summary.counts).toEqual({ nasal: 0, retroflex: 0, nl: 0 });
+    expect(summary.topSyllables).toEqual([]);
+  });
+
+  it("sums family counts and ranks the most-confused syllables across runs", () => {
+    const results = [
+      withConfusions(0, {
+        counts: { nasal: 2, retroflex: 1, nl: 0 },
+        hits: [
+          { expected: "min", kind: "nasal" },
+          { expected: "min", kind: "nasal" },
+          { expected: "si", kind: "retroflex" },
+        ],
+      }),
+      withConfusions(1, {
+        counts: { nasal: 1, retroflex: 0, nl: 1 },
+        hits: [
+          { expected: "min", kind: "nasal" },
+          { expected: "nan", kind: "nl" },
+        ],
+      }),
+    ];
+    const summary = confusionTotals(results);
+    expect(summary.counts).toEqual({ nasal: 3, retroflex: 1, nl: 1 });
+    expect(summary.total).toBe(5);
+    // 民 min confused 3 times — the top offender.
+    expect(summary.topSyllables[0]).toEqual({ expected: "min", count: 3 });
   });
 });
 

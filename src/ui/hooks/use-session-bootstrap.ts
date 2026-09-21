@@ -1,5 +1,6 @@
 import { onCleanup, onMount } from "solid-js";
 import type { Filter, Passage } from "../../engine/corpus";
+import type { ChineseLessonPlan } from "../../engine/pinyin";
 import type { PassageLength, Profile, TestMode } from "../../engine/session";
 import { createDefaultProfile, Session } from "../../engine/session";
 import type {
@@ -40,6 +41,14 @@ export interface SessionBootstrapOptions {
     wordCount: number,
     opts: { passageLength: PassageLength },
   ) => Passage;
+  /** Optional Chinese adaptive source. Defaults to Session's benchmark fallback. */
+  zhAdaptiveSource?: (
+    plan: ChineseLessonPlan,
+    wordCount: number,
+    opts: { passageLength: PassageLength },
+  ) => Passage;
+  /** Corpus-frequency Chinese syllable order for adaptive unlocking. */
+  zhSyllableInventory?: readonly string[];
   /** Optional benchmark text source. Defaults to Session's built-in common-words. */
   benchmarkSource?: (
     wordCount: number,
@@ -125,6 +134,8 @@ export function createSessionBootstrap(opts: SessionBootstrapOptions): void {
       const session = new Session(initialProfile, {
         onResult: () => opts.onResult(session.profile),
         ...(opts.adaptiveSource ? { adaptiveSource: opts.adaptiveSource } : {}),
+        ...(opts.zhAdaptiveSource ? { zhAdaptiveSource: opts.zhAdaptiveSource } : {}),
+        ...(opts.zhSyllableInventory ? { zhSyllableInventory: opts.zhSyllableInventory } : {}),
         ...(opts.benchmarkSource ? { benchmarkSource: opts.benchmarkSource } : {}),
       });
 

@@ -1,5 +1,6 @@
 import type { JSX } from "solid-js";
 import { createMemo, For, Show } from "solid-js";
+import { CONFUSION_KINDS, CONFUSION_LABELS } from "../engine/pinyin";
 import type { Profile, RunResult } from "../engine/session";
 import { CHANNEL_LABELS } from "../io";
 import {
@@ -8,7 +9,9 @@ import {
   byChannel,
   type ChannelAggregate,
   type ChannelTag,
+  type ConfusionSummary,
   channelOf,
+  confusionTotals,
   dailyCounts,
   type FingerStat,
   labelForFinger,
@@ -160,6 +163,7 @@ export function StatsView(props: StatsViewProps): JSX.Element {
   const slowBigrams = createMemo(() => slowestBigrams(results(), 5));
   const top10Words = createMemo(() => topWords(results(), 10));
   const achievements = createMemo(() => milestones(results()));
+  const confusions = createMemo(() => confusionTotals(results()));
 
   return (
     <main class="stage profile-view">
@@ -223,6 +227,10 @@ export function StatsView(props: StatsViewProps): JSX.Element {
           </PanelSection>
           <TopWordsPanel words={top10Words()} />
         </div>
+
+        <Show when={confusions().total > 0}>
+          <ConfusionPanel summary={confusions()} />
+        </Show>
 
         <MilestonesPanel achievements={achievements()} />
 
@@ -507,6 +515,48 @@ function ChannelBars(props: { channels: ChannelAggregate[] }): JSX.Element {
         </For>
       </div>
     </Show>
+  );
+}
+
+/**
+ * Chinese-only panel: which confusable-syllable family (前后鼻音 / 平翘舌 /
+ * 边鼻音) the user slips on most across all runs, plus the worst individual
+ * syllables. Only rendered when there is confusion data (see caller's Show).
+ */
+function ConfusionPanel(props: { summary: ConfusionSummary }): JSX.Element {
+  const max = createMemo(() => Math.max(...CONFUSION_KINDS.map((k) => props.summary.counts[k]), 1));
+  return (
+    <PanelSection label="易混音 · 中文">
+      <div class="channel-bars">
+        <For each={CONFUSION_KINDS}>
+          {(kind) => {
+            const count = props.summary.counts[kind];
+            const pct = Math.round((count / max()) * 100);
+            return (
+              <div class="channel-bars__row">
+                <div class="channel-bars__label">{CONFUSION_LABELS[kind]}</div>
+                <div class="channel-bars__track">
+                  <div class="channel-bars__fill" style={{ width: `${pct}%` }} />
+                </div>
+                <div class="channel-bars__value">{count}</div>
+              </div>
+            );
+          }}
+        </For>
+      </div>
+      <Show when={props.summary.topSyllables.length > 0}>
+        <div class="confusions" style={{ "margin-top": "var(--space-3)" }}>
+          <span class="confusions__label">最常混</span>
+          <For each={props.summary.topSyllables}>
+            {(s) => (
+              <span class="confusion" title={`${s.expected}：混淆 ${s.count} 次`}>
+                {s.expected} · {s.count}
+              </span>
+            )}
+          </For>
+        </div>
+      </Show>
+    </PanelSection>
   );
 }
 

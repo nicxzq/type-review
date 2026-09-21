@@ -1,7 +1,7 @@
 import type { JSX } from "solid-js";
 import { createSignal, Show } from "solid-js";
 import { UI_BOUNDS } from "../engine/bounds";
-import type { PinyinScheme } from "../engine/pinyin";
+import { CONFUSION_LABELS, type ConfusionKind, type PinyinScheme } from "../engine/pinyin";
 import type { Language, Mode, PassageLength, ProfileSettings, TestMode } from "../engine/session";
 import { KEY_SOUND_PACKS } from "../io";
 import type { KeyboardLayoutName } from "./components/keyboard-layouts";
@@ -19,6 +19,14 @@ const LANGUAGE_OPTIONS = [
 const PINYIN_SCHEME_OPTIONS = [
   { value: "full" as PinyinScheme, label: "全拼" },
   { value: "xiaohe" as PinyinScheme, label: "小鹤双拼" },
+  { value: "ziranma" as PinyinScheme, label: "自然码双拼" },
+];
+type ConfusionDrill = "off" | ConfusionKind;
+const CONFUSION_DRILL_OPTIONS = [
+  { value: "off" as ConfusionDrill, label: "关闭" },
+  { value: "nasal" as ConfusionDrill, label: CONFUSION_LABELS.nasal },
+  { value: "retroflex" as ConfusionDrill, label: CONFUSION_LABELS.retroflex },
+  { value: "nl" as ConfusionDrill, label: CONFUSION_LABELS.nl },
 ];
 const MODE_OPTIONS = [
   { value: "adaptive" as Mode, label: "adaptive" },
@@ -122,6 +130,9 @@ export function Settings(props: SettingsProps): JSX.Element {
   const [pinyinScheme, setPinyinSchemeSignal] = createSignal<PinyinScheme>(
     props.initial.pinyinScheme,
   );
+  const [confusionDrill, setConfusionDrillSignal] = createSignal<ConfusionDrill>(
+    props.initial.confusionDrill,
+  );
   const [mode, setModeSignal] = createSignal<Mode>(props.initial.mode);
   const [targetWpm, setTargetWpmSignal] = createSignal(props.initial.targetWpm);
   const [wordCount, setWordCountSignal] = createSignal<WordCount>(
@@ -149,6 +160,7 @@ export function Settings(props: SettingsProps): JSX.Element {
       ...props.initial,
       language: language(),
       pinyinScheme: pinyinScheme(),
+      confusionDrill: confusionDrill(),
       mode: mode(),
       targetWpm: clamp(
         targetWpm(),
@@ -181,6 +193,10 @@ export function Settings(props: SettingsProps): JSX.Element {
   };
   const setPinyinScheme = (next: PinyinScheme): void => {
     setPinyinSchemeSignal(next);
+    applyAll();
+  };
+  const setConfusionDrill = (next: ConfusionDrill): void => {
+    setConfusionDrillSignal(next);
     applyAll();
   };
   const setMode = (next: Mode): void => {
@@ -316,30 +332,48 @@ export function Settings(props: SettingsProps): JSX.Element {
                       orientation="row"
                     />
                     <p class="field__hint">
-                      全拼 = type the whole pinyin. 小鹤双拼 = two keys per character; the full
-                      pinyin stays shown below the keys.
+                      全拼 = type the whole pinyin. 小鹤双拼 / 自然码双拼 = two keys per character;
+                      the full pinyin stays shown below the keys.
+                    </p>
+                  </div>
+
+                  <div class="field">
+                    <span id="lbl-confusion-drill" class="field__label">
+                      易混音训练
+                    </span>
+                    <RadioGroup
+                      name="confusionDrill"
+                      labelledBy="lbl-confusion-drill"
+                      options={CONFUSION_DRILL_OPTIONS}
+                      value={confusionDrill()}
+                      onChange={setConfusionDrill}
+                      orientation="row"
+                    />
+                    <p class="field__hint">
+                      选一族易混音（前后鼻音 / 平翘舌 /
+                      边鼻音）后，练习专门给出最小对；关闭则用普通语料。
                     </p>
                   </div>
                 </Show>
 
-                <Show when={language() === "en"}>
-                  <div class="field">
-                    <span id="lbl-mode" class="field__label">
-                      mode
-                    </span>
-                    <RadioGroup
-                      name="mode"
-                      labelledBy="lbl-mode"
-                      options={MODE_OPTIONS}
-                      value={mode()}
-                      onChange={setMode}
-                      orientation="row"
-                    />
-                    <p class="field__hint">
-                      adaptive drills your weak keys. benchmark is a plain timed test.
-                    </p>
-                  </div>
+                <div class="field">
+                  <span id="lbl-mode" class="field__label">
+                    mode
+                  </span>
+                  <RadioGroup
+                    name="mode"
+                    labelledBy="lbl-mode"
+                    options={MODE_OPTIONS}
+                    value={mode()}
+                    onChange={setMode}
+                    orientation="row"
+                  />
+                  <p class="field__hint">
+                    adaptive drills your weak keys. benchmark is a plain timed test.
+                  </p>
+                </div>
 
+                <Show when={language() === "en" || mode() === "adaptive"}>
                   <div class="field">
                     <label class="field__label" for="target-wpm">
                       target speed (wpm)

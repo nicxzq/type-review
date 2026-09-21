@@ -50,14 +50,14 @@ describe("Results", () => {
 
   function mount(
     plan: LessonPlan | null,
-    callbacks: { onNext?: () => void; onSettings?: () => void } = {},
+    callbacks: { onNext?: () => void; onSettings?: () => void; result?: RunResult } = {},
   ): HTMLElement {
     const host = document.createElement("div");
     document.body.appendChild(host);
     dispose = render(
       () => (
         <Results
-          result={sampleResult}
+          result={callbacks.result ?? sampleResult}
           plan={plan}
           entry={null}
           unlocked={[]}
@@ -108,6 +108,31 @@ describe("Results", () => {
     const host = mount(null);
     expect(host.querySelector(".weak-keys")).toBeNull();
     expect(host.querySelector(".results__note")).toBeNull();
+  });
+
+  it("shows a confusion breakdown (Chinese runs) with family label and count", () => {
+    const result: RunResult = {
+      ...sampleResult,
+      confusions: {
+        counts: { nasal: 2, retroflex: 1, nl: 0 },
+        hits: [
+          { expected: "min", kind: "nasal" },
+          { expected: "ming", kind: "nasal" },
+          { expected: "si", kind: "retroflex" },
+        ],
+      },
+    };
+    const host = mount(null, { result });
+    const rows = Array.from(host.querySelectorAll(".confusion")).map((el) => el.textContent ?? "");
+    // Families with a hit are shown (nl == 0 is omitted); sorted most-confused first.
+    expect(rows.some((t) => t.includes("前后鼻音") && t.includes("2"))).toBe(true);
+    expect(rows.some((t) => t.includes("平翘舌") && t.includes("1"))).toBe(true);
+    expect(rows.some((t) => t.includes("边鼻音"))).toBe(false);
+  });
+
+  it("shows no confusion breakdown for a Latin run", () => {
+    const host = mount(null);
+    expect(host.querySelector(".confusions")).toBeNull();
   });
 
   it("fires onNext and onSettings from the action buttons", () => {

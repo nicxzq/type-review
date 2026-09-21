@@ -22,6 +22,7 @@ function initial(): ProfileSettings {
     includePunctuation: false,
     language: "en",
     pinyinScheme: "full",
+    confusionDrill: "off",
   };
 }
 
@@ -238,5 +239,33 @@ describe("Settings", () => {
     // The hint paragraph below the slider shows '42%'.
     const text = host.textContent ?? "";
     expect(text).toContain("42%");
+  });
+
+  it("exposes the confusion-drill picker only for Chinese and saves the chosen family", () => {
+    const onSave = vi.fn();
+    // Starts in English — no confusion-drill control.
+    const en = mount({ onSave });
+    expect(en.textContent).not.toContain("易混音训练");
+
+    // Switch to Chinese, then pick 前后鼻音.
+    const host = mount({ onSave, initial: { ...initial(), language: "zh" } });
+    expect(host.textContent).toContain("易混音训练");
+    onSave.mockClear();
+    pickRadio(host, "前后鼻音");
+    const saved = onSave.mock.calls.at(-1)?.[0] as ProfileSettings;
+    expect(saved.confusionDrill).toBe("nasal");
+  });
+
+  it("allows Chinese practice to select adaptive mode", () => {
+    const onSave = vi.fn();
+    const host = mount({
+      onSave,
+      initial: { ...initial(), language: "zh", mode: "benchmark" },
+    });
+
+    pickRadio(host, "adaptive");
+    const saved = onSave.mock.calls.at(-1)?.[0] as ProfileSettings;
+    expect(saved.language).toBe("zh");
+    expect(saved.mode).toBe("adaptive");
   });
 });

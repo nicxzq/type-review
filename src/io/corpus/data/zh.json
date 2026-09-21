@@ -154,5 +154,237 @@
       { "h": "律", "p": "lv" },
       { "h": "师", "p": "shi" }
     ]
+  },
+  {
+    "id": "zh-xiangsi",
+    "title": "相思 · 王维",
+    "license": "public-domain",
+    "cells": [
+      { "h": "红", "p": "hong" },
+      { "h": "豆", "p": "dou" },
+      { "h": "生", "p": "sheng" },
+      { "h": "南", "p": "nan" },
+      { "h": "国", "p": "guo" },
+      { "h": "春", "p": "chun" },
+      { "h": "来", "p": "lai" },
+      { "h": "发", "p": "fa" },
+      { "h": "几", "p": "ji" },
+      { "h": "枝", "p": "zhi" },
+      { "h": "愿", "p": "yuan" },
+      { "h": "君", "p": "jun" },
+      { "h": "多", "p": "duo" },
+      { "h": "采", "p": "cai" },
+      { "h": "撷", "p": "xie" },
+      { "h": "此", "p": "ci" },
+      { "h": "物", "p": "wu" },
+      { "h": "最", "p": "zui" },
+      { "h": "相", "p": "xiang" },
+      { "h": "思", "p": "si" }
+    ]
+  },
+  {
+    "id": "zh-minnong",
+    "title": "悯农 · 李绅",
+    "license": "public-domain",
+    "cells": [
+      { "h": "锄", "p": "chu" },
+      { "h": "禾", "p": "he" },
+      { "h": "日", "p": "ri" },
+      { "h": "当", "p": "dang" },
+      { "h": "午", "p": "wu" },
+      { "h": "汗", "p": "han" },
+      { "h": "滴", "p": "di" },
+      { "h": "禾", "p": "he" },
+      { "h": "下", "p": "xia" },
+      { "h": "土", "p": "tu" },
+      { "h": "谁", "p": "shui" },
+      { "h": "知", "p": "zhi" },
+      { "h": "盘", "p": "pan" },
+      { "h": "中", "p": "zhong" },
+      { "h": "餐", "p": "can" },
+      { "h": "粒", "p": "li" },
+      { "h": "粒", "p": "li" },
+      { "h": "皆", "p": "jie" },
+      { "h": "辛", "p": "xin" },
+      { "h": "苦", "p": "ku" }
+    ]
+  },
+  {
+    "id": "zh-jiangxue",
+    "title": "江雪 · 柳宗元",
+    "license": "public-domain",
+    "cells": [
+      { "h": "千", "p": "qian" },
+      { "h": "山", "p": "shan" },
+      { "h": "鸟", "p": "niao" },
+      { "h": "飞", "p": "fei" },
+      { "h": "绝", "p": "jue" },
+      { "h": "万", "p": "wan" },
+      { "h": "径", "p": "jing" },
+      { "h": "人", "p": "ren" },
+      { "h": "踪", "p": "zong" },
+      { "h": "灭", "p": "mie" },
+      { "h": "孤", "p": "gu" },
+      { "h": "舟", "p": "zhou" },
+      { "h": "蓑", "p": "suo" },
+      { "h": "笠", "p": "li" },
+      { "h": "翁", "p": "weng" },
+      { "h": "独", "p": "du" },
+      { "h": "钓", "p": "diao" },
+      { "h": "寒", "p": "han" },
+      { "h": "江", "p": "jiang" },
+      { "h": "雪", "p": "xue" }
+    ]
+  },
+  {
+    "id": "zh-niaomingjian",
+    "title": "鸟鸣涧 · 王维",
+    "license": "public-domain",
+    "cells": [
+      { "h": "人", "p": "ren" },
+      { "h": "闲", "p": "xian" },
+      { "h": "桂", "p": "gui" },
+      { "h": "花", "p": "hua" },
+      { "h": "落", "p": "luo" },
+      { "h": "夜", "p": "ye" },
+      { "h": "静", "p": "jing" },
+      { "h": "春", "p": "chun" },
+      { "h": "山", "p": "shan" },
+      { "h": "空", "p": "kong" },
+      { "h": "月", "p": "yue" },
+      { "h": "出", "p": "chu" },
+      { "h": "惊", "p": "jing" },
+      { "h": "山", "p": "shan" },
+      { "h": "鸟", "p": "niao" },
+      { "h": "时", "p": "shi" },
+      { "h": "鸣", "p": "ming" },
+      { "h": "春", "p": "chun" },
+      { "h": "涧", "p": "jian" },
+      { "h": "中", "p": "zhong" }
+    ]
+  },
+  {
+    "id": "zh-qianli",
+    "title": "千里之行 · 老子",
+    "license": "public-domain",
+    "cells": [
+      { "h": "千", "p": "qian" },
+      { "h": "里", "p": "li" },
+      { "h": "之", "p": "zhi" },
+      { "h": "行", "p": "xing" },
+      { "h": "始", "p": "shi" },
+      { "h": "于", "p": "yu" },
+      { "h": "足", "p": "zu" },
+      { "h": "下", "p": "xia" }
+    ]
+  },
+  {
+    "id": "zh-sanren",
+    "title": "三人行 · 论语",
+    "license": "public-domain",
+    "cells": [
+      { "h": "三", "p": "san" },
+      { "h": "人", "p": "ren" },
+      { "h": "行", "p": "xing" },
+      { "h": "必", "p": "bi" },
+      { "h": "有", "p": "you" },
+      { "h": "我", "p": "wo" },
+      { "h": "师", "p": "shi" }
+    ]
+  },
+  {
+    "id": "zh-wengu",
+    "title": "温故知新 · 论语",
+    "license": "public-domain",
+    "cells": [
+      { "h": "温", "p": "wen" },
+      { "h": "故", "p": "gu" },
+      { "h": "而", "p": "er" },
+      { "h": "知", "p": "zhi" },
+      { "h": "新", "p": "xin" }
+    ]
+  },
+  {
+    "id": "zh-hainei",
+    "title": "海内存知己 · 王勃",
+    "license": "public-domain",
+    "cells": [
+      { "h": "海", "p": "hai" },
+      { "h": "内", "p": "nei" },
+      { "h": "存", "p": "cun" },
+      { "h": "知", "p": "zhi" },
+      { "h": "己", "p": "ji" },
+      { "h": "天", "p": "tian" },
+      { "h": "涯", "p": "ya" },
+      { "h": "若", "p": "ruo" },
+      { "h": "比", "p": "bi" },
+      { "h": "邻", "p": "lin" }
+    ]
+  },
+  {
+    "id": "zh-adaptive-core-1",
+    "title": "核心音节练习一",
+    "license": "CC0-1.0",
+    "cells": [
+      { "h": "知", "p": "zhi" },
+      { "h": "礼", "p": "li" },
+      { "h": "知", "p": "zhi" },
+      { "h": "止", "p": "zhi" }
+    ]
+  },
+  {
+    "id": "zh-adaptive-core-2",
+    "title": "核心音节练习二",
+    "license": "CC0-1.0",
+    "cells": [
+      { "h": "不", "p": "bu" },
+      { "h": "识", "p": "shi" },
+      { "h": "不", "p": "bu" },
+      { "h": "失", "p": "shi" }
+    ]
+  },
+  {
+    "id": "zh-adaptive-core-3",
+    "title": "核心音节练习三",
+    "license": "CC0-1.0",
+    "cells": [
+      { "h": "初", "p": "chu" },
+      { "h": "春", "p": "chun" },
+      { "h": "初", "p": "chu" },
+      { "h": "识", "p": "shi" }
+    ]
+  },
+  {
+    "id": "zh-adaptive-qian",
+    "title": "千里知礼",
+    "license": "CC0-1.0",
+    "cells": [
+      { "h": "千", "p": "qian" },
+      { "h": "里", "p": "li" },
+      { "h": "知", "p": "zhi" },
+      { "h": "礼", "p": "li" }
+    ]
+  },
+  {
+    "id": "zh-adaptive-yi",
+    "title": "一时不知",
+    "license": "CC0-1.0",
+    "cells": [
+      { "h": "一", "p": "yi" },
+      { "h": "时", "p": "shi" },
+      { "h": "不", "p": "bu" },
+      { "h": "知", "p": "zhi" }
+    ]
+  },
+  {
+    "id": "zh-adaptive-shan",
+    "title": "山里初春",
+    "license": "CC0-1.0",
+    "cells": [
+      { "h": "山", "p": "shan" },
+      { "h": "里", "p": "li" },
+      { "h": "初", "p": "chu" },
+      { "h": "春", "p": "chun" }
+    ]
   }
 ]
