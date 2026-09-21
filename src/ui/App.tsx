@@ -1,7 +1,8 @@
 import type { JSX } from "solid-js";
 import { createMemo, createSignal, onCleanup, Show } from "solid-js";
 import type { CorpusEntry } from "../engine/corpus";
-import type { PinyinScheme } from "../engine/pinyin";
+import type { ChineseLessonPlan, ConfusionKind, PinyinScheme } from "../engine/pinyin";
+import { buildSyllableInventory } from "../engine/pinyin";
 import type { Language, PassageLength, ProfileSettings, Session } from "../engine/session";
 import type { ProfileStore } from "../io";
 import {
@@ -9,6 +10,7 @@ import {
   bundledQuotes,
   createChineseSource,
   createCompositeCorpus,
+  createConfusionDrillSource,
   createCorpusSessionAdapter,
   createDifficultSource,
   createDrillsSource,
@@ -17,6 +19,7 @@ import {
   createUserSource,
   NoPersistStore,
   validateSettings,
+  ZH_ENTRIES,
 } from "../io";
 import { About } from "./About";
 import { ArticleView } from "./articles/ArticleView";
@@ -124,7 +127,12 @@ export function App(props: AppProps = {}): JSX.Element {
   // pull from without reaching into the not-yet-assigned `session` ref.
   let currentLanguage: Language = "en";
   let currentScheme: PinyinScheme = "full";
+  let currentConfusionDrill: "off" | ConfusionKind = "off";
   const chineseSource = createChineseSource(() => currentScheme);
+  const zhSyllableInventory = buildSyllableInventory(
+    ZH_ENTRIES.map((entry) => entry.cells.map((cell) => cell.p)),
+  );
+  const confusionDrillSource = createConfusionDrillSource(() => currentScheme);
   const zhWantedChars = (passageLength: PassageLength): number => {
     switch (passageLength) {
       case "short":
@@ -141,11 +149,40 @@ export function App(props: AppProps = {}): JSX.Element {
     if (currentLanguage === "zh") {
       // Chinese runs have no per-entry English attribution card.
       setCurrentEntry(null);
+      // A confusion-drill focus routes to the minimal-pair source instead of
+      // the general corpus, so the whole run drills that one contrast.
+      if (currentConfusionDrill !== "off") {
+        return confusionDrillSource.pick(
+          zhWantedChars(opts.passageLength),
+          Math.random,
+          currentConfusionDrill,
+        );
+      }
       const passage = chineseSource.pick(zhWantedChars(opts.passageLength), Math.random);
       if (passage) return passage;
       // Empty corpus — fall through to the English generator so a run can start.
     }
     return corpusAdapter.benchmarkSource(wordCount, opts);
+  };
+  const zhAdaptiveSource = (
+    plan: ChineseLessonPlan,
+    _wordCount: number,
+    opts: { passageLength: PassageLength },
+  ) => {
+    setCurrentEntry(null);
+    const passage = chineseSource.pickAdaptive(zhWantedChars(opts.passageLength), Math.random, {
+      included: new Set(plan.included),
+      focus: plan.focus,
+    });
+    return (
+      passage ??
+      corpusAdapter.benchmarkSource(30, {
+        includeNumbers: false,
+        includePunctuation: false,
+        passageLength: opts.passageLength,
+        testMode: "words",
+      })
+    );
   };
 
   const [loadBanner, setLoadBanner] = createSignal<LoadBanner>(null);
@@ -231,15 +268,17 @@ export function App(props: AppProps = {}): JSX.Element {
       logFailure("settings", new Error("validateSettings rejected the input"));
       return;
     }
-    // Chinese is benchmark-only in P1 — the adaptive letter-unlock curriculum
-    // is English. Coerce mode so a stale `adaptive` selection can't route the
-    // zh run through the (English) adaptive source.
+    // Confusion drills are benchmark passages; adaptive zh uses the normal
+    // corpus-filtered syllable curriculum instead.
     const effective: ProfileSettings =
-      validated.language === "zh" && validated.mode !== "benchmark"
+      validated.language === "zh" &&
+      validated.confusionDrill !== "off" &&
+      validated.mode !== "benchmark"
         ? { ...validated, mode: "benchmark" }
         : validated;
     currentLanguage = effective.language;
     currentScheme = effective.pinyinScheme;
+    currentConfusionDrill = effective.confusionDrill;
     session.updateSettings(effective);
     persist();
     // Settings is immediate-mode now — every control change calls this.
@@ -318,22 +357,20 @@ export function App(props: AppProps = {}): JSX.Element {
     bus: keyBus,
     setLoadBanner,
     adaptiveSource: corpusAdapter.adaptiveSource,
+    zhAdaptiveSource,
+    zhSyllableInventory,
     benchmarkSource,
     onReady: (deps) => {
       session = deps.session;
       store = deps.store;
       currentLanguage = session.profile.settings.language;
       currentScheme = session.profile.settings.pinyinScheme;
-      // A saved zh profile: the Session constructor already sourced a run using
-      // the default `en` (currentLanguage wasn't set yet). Re-source now, and
-      // force benchmark mode since zh is benchmark-only in P1.
+      currentConfusionDrill = session.profile.settings.confusionDrill;
+      // A saved zh profile: the Session constructor may have sourced with the
+      // default scheme refs before current settings were copied into these
+      // closures. Re-source now with the active scheme/drill values.
       if (currentLanguage === "zh") {
-        const s = session.profile.settings;
-        if (s.mode !== "benchmark") {
-          session.updateSettings({ ...s, mode: "benchmark" });
-        } else {
-          session.start();
-        }
+        session.start();
       }
       view.attach(() => session.snapshot());
     },

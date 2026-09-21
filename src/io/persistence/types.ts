@@ -1,5 +1,6 @@
 import type { BigramHit } from "../../engine/adaptive";
 import type { RunMetrics } from "../../engine/metrics";
+import type { ConfusionTally } from "../../engine/pinyin";
 import type { Mode, Profile, ProfileSettings } from "../../engine/session";
 
 /**
@@ -49,4 +50,8 @@ export interface SerializedRunResult {
   metrics: RunMetrics;
   /** Keys are 2-char bigrams (the transition between consecutive expected chars). */
   histogram: Record<string, BigramHit>;
+  /** Chinese runs only: per-family confusable-syllable tally. Absent for Latin runs. */
+  confusions?: ConfusionTally;
+  /** Chinese runs only: per-full-pinyin mean timings. Absent for Latin runs. */
+  syllableTimes?: Record<string, number>;
 }

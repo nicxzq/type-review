@@ -23,12 +23,12 @@ export function Copyright(props: CopyrightProps): JSX.Element {
         <h3>The app</h3>
         <p>
           © 2026{" "}
-          <a href="https://lixiaolai.com" target="_blank" rel="noopener">
-            xiaolai
+          <a href="https://wiki.carlxu.cn" target="_blank" rel="noopener">
+            @carlxu
           </a>
           . Source code released under the{" "}
           <a
-            href="https://github.com/xiaolai/type-review/blob/main/LICENSE"
+            href="https://github.com/nicxzq/type-review/blob/main/LICENSE"
             target="_blank"
             rel="noopener"
           >
@@ -58,7 +58,7 @@ export function Copyright(props: CopyrightProps): JSX.Element {
         </ul>
         <p>
           If you're a rights-holder and want a snippet removed, open an issue on{" "}
-          <a href="https://github.com/xiaolai/type-review/issues" target="_blank" rel="noopener">
+          <a href="https://github.com/nicxzq/type-review/issues" target="_blank" rel="noopener">
             GitHub
           </a>{" "}
           and it'll come out of the next release.

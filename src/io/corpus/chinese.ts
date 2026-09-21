@@ -29,6 +29,11 @@ export interface ChineseSource {
    * the corpus is empty.
    */
   pick(wantedChars: number, rng: () => number): Passage | null;
+  pickAdaptive(
+    wantedChars: number,
+    rng: () => number,
+    options: { included: ReadonlySet<string>; focus: string | null },
+  ): Passage | null;
 }
 
 /**
@@ -48,28 +53,66 @@ export function createChineseSource(getScheme: () => PinyinScheme = () => "full"
     cells: entry.cells.map((c) => ({ hanzi: c.h, pinyin: c.p })),
   }));
 
+  const toPassage = (entry: (typeof cellsById)[number]): Passage => {
+    const layout = buildChineseLayout(entry.cells, getScheme());
+    return makePassage(entry.id, layout.keys, layout.segments);
+  };
+
+  const pickWeighted = (
+    entries: readonly (typeof cellsById)[number][],
+    wantedChars: number,
+    rng: () => number,
+    focus: string | null = null,
+  ): Passage | null => {
+    if (entries.length === 0) return null;
+    const passages = entries.map((entry) => ({
+      entry,
+      passage: toPassage(entry),
+    }));
+    const weights = passages.map(({ entry, passage }) => {
+      const base = Math.max(0.01, lengthScore(passage.text.length, wantedChars));
+      const hasFocus = focus !== null && entry.cells.some((cell) => cell.pinyin === focus);
+      return hasFocus ? base * 3 : base;
+    });
+    const total = weights.reduce((sum, w) => sum + w, 0);
+    let pick = rng() * total;
+    for (let i = 0; i < passages.length; i++) {
+      pick -= weights[i] ?? 0;
+      if (pick <= 0) {
+        const item = passages[i];
+        if (item !== undefined) return item.passage;
+      }
+    }
+    return passages[passages.length - 1]?.passage ?? null;
+  };
+
   return {
     pick(wantedChars, rng): Passage | null {
       if (cellsById.length === 0) return null;
-      const scheme = getScheme();
-      const passages = cellsById.map((entry) => {
-        const layout = buildChineseLayout(entry.cells, scheme);
-        return makePassage(entry.id, layout.keys, layout.segments);
-      });
       // Same triangular length-weighting as the Latin sources, with a small
       // floor so a wantedChars far from every (short) passage still picks one
       // rather than dividing by zero.
-      const weights = passages.map((p) => Math.max(0.01, lengthScore(p.text.length, wantedChars)));
-      const total = weights.reduce((sum, w) => sum + w, 0);
-      let pick = rng() * total;
-      for (let i = 0; i < passages.length; i++) {
-        pick -= weights[i] ?? 0;
-        if (pick <= 0) {
-          const p = passages[i];
-          if (p !== undefined) return p;
-        }
+      return pickWeighted(cellsById, wantedChars, rng);
+    },
+    pickAdaptive(wantedChars, rng, { included, focus }): Passage | null {
+      if (cellsById.length === 0) return null;
+      const unlocked = cellsById.filter((entry) =>
+        entry.cells.every((cell) => included.has(cell.pinyin)),
+      );
+      if (unlocked.length > 0) {
+        return pickWeighted(unlocked, wantedChars, rng, focus);
       }
-      return passages[passages.length - 1] ?? null;
+      const lockedCounts = cellsById.map((entry) => ({
+        entry,
+        locked: entry.cells.filter((cell) => !included.has(cell.pinyin)).length,
+      }));
+      const minLocked = Math.min(...lockedCounts.map((item) => item.locked));
+      return pickWeighted(
+        lockedCounts.filter((item) => item.locked === minLocked).map((item) => item.entry),
+        wantedChars,
+        rng,
+        focus,
+      );
     },
   };
 }

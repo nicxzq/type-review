@@ -38,6 +38,7 @@ function profile(results: RunResult[]): Profile {
       includePunctuation: false,
       language: "en",
       pinyinScheme: "full",
+      confusionDrill: "off",
       testMode: "words" as const,
       testDurationSec: 30,
       noBackspace: false,
@@ -66,6 +67,27 @@ describe("StatsView", () => {
     const host = mount(profile([]));
     expect(host.querySelector(".empty-note")?.textContent).toMatch(/no sessions/i);
     expect(host.querySelector(".profile-hero")).toBeNull();
+  });
+
+  it("shows the confusion panel only when a run carries confusion data", () => {
+    const plain = mount(profile([makeResult(0, 50), makeResult(1, 60)]));
+    expect(plain.querySelector(".confusions")).toBeNull();
+    dispose();
+    document.body.innerHTML = "";
+
+    const zh = makeResult(2, 55);
+    zh.confusions = {
+      counts: { nasal: 3, retroflex: 1, nl: 0 },
+      hits: [
+        { expected: "min", kind: "nasal" },
+        { expected: "min", kind: "nasal" },
+      ],
+    };
+    const host = mount(profile([makeResult(0, 50), zh]));
+    expect(host.textContent).toContain("易混音");
+    expect(host.textContent).toContain("前后鼻音");
+    // Top confused syllable surfaces.
+    expect(host.textContent).toContain("min");
   });
 
   it("renders the four hero cells with computed stats", () => {

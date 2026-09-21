@@ -30,6 +30,34 @@ describe("Session", () => {
     expect(session.snapshot().plan?.included).toHaveLength(6);
   });
 
+  it("zh adaptive mode builds a syllable plan and uses the injected zh adaptive source", () => {
+    const profile = createDefaultProfile();
+    profile.settings.mode = "adaptive";
+    profile.settings.language = "zh";
+    profile.settings.adaptive.minAlphabetSize = 2;
+    const zhAdaptiveSource = vi.fn(({ included }) =>
+      makePassage("zh-adaptive", [...included].join(""), [
+        { start: 0, end: 3, display: "知", hint: "zhi" },
+      ]),
+    );
+    const session = new Session(profile, {
+      zhSyllableInventory: ["zhi", "shi", "bu"],
+      zhAdaptiveSource,
+      adaptiveSource: () => makePassage("english-adaptive", "eeee"),
+    });
+
+    const snap = session.snapshot();
+    expect(snap.mode).toBe("adaptive");
+    expect(snap.plan).toBeNull();
+    expect(snap.zhPlan?.included).toEqual(["zhi", "shi"]);
+    expect(snap.typing.expected).toBe("zhishi");
+    expect(zhAdaptiveSource).toHaveBeenCalledWith(
+      expect.objectContaining({ included: ["zhi", "shi"], focus: "zhi" }),
+      profile.settings.wordCount,
+      { passageLength: profile.settings.passageLength },
+    );
+  });
+
   it("records a RunResult into the profile when a run completes", () => {
     const profile = createDefaultProfile();
     profile.settings.mode = "adaptive";
@@ -111,5 +139,51 @@ describe("Session", () => {
     expect(profile.results).toHaveLength(1);
     expect(profile.results[0]?.mode).toBe("benchmark");
     expect(profile.results[0]?.histogram.size).toBeGreaterThan(0);
+  });
+
+  it("has no confusion tally for a Latin (en) run", () => {
+    const profile = createDefaultProfile();
+    profile.settings.mode = "benchmark";
+    const session = new Session(profile, {
+      benchmarkSource: () => makePassage("bench", "the cat sat"),
+    });
+    completeRun(session);
+    expect(profile.results[0]?.confusions).toBeUndefined();
+  });
+
+  it("tallies a 前后鼻音 confusion on a Chinese run", () => {
+    const profile = createDefaultProfile();
+    profile.settings.mode = "benchmark";
+    profile.settings.language = "zh";
+    profile.settings.pinyinScheme = "ziranma";
+    // 民 min = "mn", 四 si = "si" in 自然码.
+    const passage = makePassage("zh-test", "mnsi", [
+      { start: 0, end: 2, display: "民", hint: "mn", note: "min" },
+      { start: 2, end: 4, display: "四", hint: "si", note: "si" },
+    ]);
+    const session = new Session(profile, { now: () => 1, benchmarkSource: () => passage });
+    // Type 民 as "my" (= 明 ming) — a 前后鼻音 slip — then 四 correctly.
+    let t = 1000;
+    for (const ch of ["m", "y", "s", "i"]) {
+      session.input(ch, t);
+      t += 100;
+    }
+    const result = profile.results[0];
+    expect(result?.confusions?.counts).toEqual({ nasal: 1, retroflex: 0, nl: 0 });
+    expect(result?.confusions?.hits).toContainEqual({ expected: "min", kind: "nasal" });
+  });
+
+  it("records per-syllable timings for a segmented Chinese run", () => {
+    const profile = createDefaultProfile();
+    profile.settings.mode = "benchmark";
+    profile.settings.language = "zh";
+    const passage = makePassage("zh-test", "zhongguo", [
+      { start: 0, end: 5, display: "中", hint: "zhong" },
+      { start: 5, end: 8, display: "国", hint: "guo" },
+    ]);
+    const session = new Session(profile, { now: () => 1, benchmarkSource: () => passage });
+    completeRun(session, 1000, 100);
+
+    expect(profile.results[0]?.syllableTimes).toEqual({ zhong: 100, guo: 100 });
   });
 });

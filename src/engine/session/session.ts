@@ -3,6 +3,13 @@ import { buildBigramStatsMap, histogramFromSteps, planLesson, Target } from "../
 import type { Filter, Passage } from "../corpus";
 import { generatePlainWords, generatePseudoWords, makePassage } from "../corpus";
 import { computeLiveMetrics, computeRunMetrics } from "../metrics";
+import type { ChineseLessonPlan, ConfusionTally } from "../pinyin";
+import {
+  buildSyllableStatsMap,
+  planChineseLesson,
+  syllableTimesFromRun,
+  tallyConfusions,
+} from "../pinyin";
 import type { Feedback } from "../typing";
 import { TextInput } from "../typing";
 import { buildAlphabet } from "./alphabet";
@@ -71,6 +78,14 @@ export class Session {
     wordCount: number,
     options: { passageLength: PassageLength },
   ) => Passage;
+  private readonly zhAdaptiveSource:
+    | ((
+        plan: ChineseLessonPlan,
+        wordCount: number,
+        options: { passageLength: PassageLength },
+      ) => Passage)
+    | undefined;
+  private readonly zhSyllableInventory: readonly string[];
   private readonly benchmarkSource: (
     wordCount: number,
     options: {
@@ -85,6 +100,7 @@ export class Session {
   private textInput: TextInput | null = null;
   private passage: Passage | null = null;
   private plan: LessonPlan | null = null;
+  private zhPlan: ChineseLessonPlan | null = null;
   private lastResult: RunResult | null = null;
   /**
    * Mode of the active run, captured at `start()`. May lag
@@ -112,6 +128,8 @@ export class Session {
     this.adaptiveSource =
       deps.adaptiveSource ??
       ((filter, wordCount) => generatePseudoWords(filter, { wordCount, rng }));
+    this.zhAdaptiveSource = deps.zhAdaptiveSource;
+    this.zhSyllableInventory = deps.zhSyllableInventory ?? [];
     this.benchmarkSource =
       deps.benchmarkSource ??
       ((wordCount, opts) =>
@@ -146,7 +164,19 @@ export class Session {
     this.runCompleted = false;
     this.activeMode = mode;
 
-    if (mode === "adaptive") {
+    if (mode === "adaptive" && this._profile.settings.language === "zh") {
+      this.plan = null;
+      this.zhPlan = this.buildChinesePlan();
+      this.passage =
+        this.zhAdaptiveSource?.(this.zhPlan, wordCount, { passageLength }) ??
+        this.benchmarkSource(wordCount, {
+          includeNumbers,
+          includePunctuation,
+          passageLength,
+          testMode,
+        });
+    } else if (mode === "adaptive") {
+      this.zhPlan = null;
       this.plan = this.buildPlan();
       const filter: Filter = {
         allowed: this.plan.included,
@@ -155,6 +185,7 @@ export class Session {
       this.passage = this.adaptiveSource(filter, wordCount, { passageLength });
     } else {
       this.plan = null;
+      this.zhPlan = null;
       this.passage =
         testMode === "time"
           ? this.benchmarkSource(timeModeWordBudget(testDurationSec), {
@@ -198,6 +229,7 @@ export class Session {
     this.runCompleted = false;
     this.activeMode = this._profile.settings.mode;
     this.plan = null;
+    this.zhPlan = null;
     // Synthetic passage id — `custom:` prefix means the source
     // classifier (channelOf) buckets it as "unknown" which is fine
     // for one-off, untracked text.
@@ -274,6 +306,7 @@ export class Session {
       elapsedMs,
       remainingSec,
       plan: this.plan,
+      zhPlan: this.zhPlan,
       lastResult: this.lastResult,
     };
   }
@@ -285,12 +318,49 @@ export class Session {
     return this.textInput;
   }
 
+  /**
+   * Confusable-syllable tally for the just-finished run, or undefined for a
+   * Latin run (no pinyin `segments`). Scheme is read from the active settings;
+   * a run cannot change scheme mid-flight (updateSettings restarts), so it
+   * matches the scheme the passage was laid out with.
+   */
+  private computeConfusions(): ConfusionTally | undefined {
+    const segments = this.passage?.segments;
+    if (segments === undefined || this.passage === null) return undefined;
+    return tallyConfusions(
+      segments,
+      this.requireRun().steps,
+      this.passage.text.length,
+      this._profile.settings.pinyinScheme,
+    );
+  }
+
+  private computeSyllableTimes(): Record<string, number> | undefined {
+    const segments = this.passage?.segments;
+    if (segments === undefined) return undefined;
+    const times = syllableTimesFromRun(segments, this.requireRun().steps);
+    return Object.keys(times).length > 0 ? times : undefined;
+  }
+
   private buildPlan(): LessonPlan {
     const histograms: Histogram[] = this._profile.results.map((result) => result.histogram);
     const bigramStats = buildBigramStatsMap(histograms);
     const target = new Target(this._profile.settings.targetWpm);
     const alphabet = buildAlphabet(this._profile.settings);
     return planLesson(alphabet, bigramStats, target, this._profile.settings.adaptive);
+  }
+
+  private buildChinesePlan(): ChineseLessonPlan {
+    const syllableStats = buildSyllableStatsMap(
+      this._profile.results.map((result) => result.syllableTimes),
+    );
+    const target = new Target(this._profile.settings.targetWpm);
+    return planChineseLesson(
+      this.zhSyllableInventory,
+      syllableStats,
+      target,
+      this._profile.settings.adaptive,
+    );
   }
 
   private recordResult(): void {
@@ -315,6 +385,10 @@ export class Session {
       }),
       histogram: histogramFromSteps(textInput.steps),
     };
+    const confusions = this.computeConfusions();
+    if (confusions !== undefined) result.confusions = confusions;
+    const syllableTimes = this.computeSyllableTimes();
+    if (syllableTimes !== undefined) result.syllableTimes = syllableTimes;
     results.push(result);
     if (results.length > MAX_HISTORY) {
       results.splice(0, results.length - MAX_HISTORY);

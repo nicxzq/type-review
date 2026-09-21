@@ -1,7 +1,7 @@
 import type { AdaptiveSettings, Histogram, LessonPlan } from "../adaptive";
 import type { Filter, InputSegment, Passage } from "../corpus";
 import type { RunMetrics } from "../metrics";
-import type { PinyinScheme } from "../pinyin";
+import type { ChineseLessonPlan, ConfusionKind, ConfusionTally, PinyinScheme } from "../pinyin";
 import type { TypingSnapshot } from "../typing";
 
 export type Mode = "adaptive" | "benchmark";
@@ -25,6 +25,17 @@ export interface RunResult {
   metrics: RunMetrics;
   /** Per-key breakdown — feeds the adaptive engine on the next run. */
   histogram: Histogram;
+  /**
+   * Per-family confusable-syllable tally (前后鼻音 / 平翘舌 / 边鼻音). Present
+   * only for Chinese runs (a passage with pinyin `segments`); undefined for
+   * Latin runs. Drives the "still confusing" surface on Results and Stats.
+   */
+  confusions?: ConfusionTally;
+  /**
+   * Chinese runs only: per-full-pinyin mean character timings for this run.
+   * Undefined for Latin runs and older stored profiles.
+   */
+  syllableTimes?: Record<string, number>;
 }
 
 /**
@@ -84,10 +95,16 @@ export interface ProfileSettings {
    */
   language: Language;
   /**
-   * Pinyin input scheme for `zh`. P1 honours `full` only; `xiaohe`
-   * (double-pinyin) is reserved for P1b. Ignored when `language === "en"`.
+   * Pinyin input scheme for `zh`: `full` (type the whole pinyin), `xiaohe`
+   * (小鹤双拼) or `ziranma` (自然码双拼). Ignored when `language === "en"`.
    */
   pinyinScheme: PinyinScheme;
+  /**
+   * Chinese confusion-drill focus. `"off"` uses the normal zh corpus; a family
+   * (`nasal` / `retroflex` / `nl`) sources minimal-pair drills for that
+   * contrast instead. Ignored when `language === "en"`.
+   */
+  confusionDrill: "off" | ConfusionKind;
 }
 
 export interface Profile {
@@ -120,6 +137,8 @@ export interface SessionSnapshot {
   remainingSec: number | null;
   /** The active lesson plan (adaptive mode) — drives the keyboard heatmap. null in benchmark mode. */
   plan: LessonPlan | null;
+  /** Active Chinese adaptive lesson plan. Null outside zh adaptive mode. */
+  zhPlan: ChineseLessonPlan | null;
   /** The just-completed run, or null while a run is in progress. */
   lastResult: RunResult | null;
 }
@@ -136,6 +155,17 @@ export interface SessionDeps {
     wordCount: number,
     options: { passageLength: PassageLength },
   ) => Passage;
+  /**
+   * Chinese adaptive source. The engine supplies a syllable plan; io chooses a
+   * pinyin-segmented Chinese passage without the engine knowing about zh.json.
+   */
+  zhAdaptiveSource?: (
+    plan: ChineseLessonPlan,
+    wordCount: number,
+    options: { passageLength: PassageLength },
+  ) => Passage;
+  /** Corpus-frequency syllable order for Chinese adaptive unlocking. */
+  zhSyllableInventory?: readonly string[];
   /**
    * Benchmark text source: given a word count and the toggles for
    * numbers/punctuation, returns a Passage. The toggles are passed

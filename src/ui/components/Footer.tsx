@@ -5,9 +5,9 @@ import type { JSX } from "solid-js";
  * Copyright). If any of these move, update here and grep for the old
  * value.
  */
-const REPO_URL = "https://github.com/xiaolai/type-review";
-const AUTHOR_NAME = "xiaolai";
-const AUTHOR_HOMEPAGE = "https://lixiaolai.com";
+const REPO_URL = "https://github.com/nicxzq/type-review";
+const AUTHOR_NAME = "@carlxu";
+const AUTHOR_HOMEPAGE = "https://wiki.carlxu.cn";
 
 export interface FooterProps {
   activeAbout: boolean;

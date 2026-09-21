@@ -2,6 +2,7 @@ import type { JSX } from "solid-js";
 import { createSignal, For, onCleanup, Show } from "solid-js";
 import type { LessonKey, LessonPlan } from "../engine/adaptive";
 import type { CorpusEntry } from "../engine/corpus";
+import { CONFUSION_KINDS, CONFUSION_LABELS, type ConfusionTally } from "../engine/pinyin";
 import type { RunResult } from "../engine/session";
 import type { Milestone } from "./stats/aggregations";
 
@@ -183,6 +184,13 @@ function ShareButton(props: { result: RunResult; entry: CorpusEntry | null }): J
   );
 }
 
+/** Confusion families that drew at least one slip this run, most-confused first. */
+function confusionRows(tally: ConfusionTally): Array<{ label: string; count: number }> {
+  return CONFUSION_KINDS.filter((kind) => tally.counts[kind] > 0)
+    .map((kind) => ({ label: CONFUSION_LABELS[kind], count: tally.counts[kind] }))
+    .sort((a, b) => b.count - a.count);
+}
+
 /** The weakest included keys, slowest first — keys still below the target threshold. */
 function weakKeys(plan: LessonPlan): LessonKey[] {
   return plan.keys
@@ -263,6 +271,23 @@ export function Results(props: {
       </Show>
 
       <ShareButton result={props.result} entry={props.entry} />
+
+      <Show when={props.result.confusions}>
+        {(tally) => (
+          <Show when={confusionRows(tally()).length > 0}>
+            <div class="confusions">
+              <span class="confusions__label">易混音</span>
+              <For each={confusionRows(tally())}>
+                {(row) => (
+                  <span class="confusion" title={`${row.label}：${row.count} 次`}>
+                    {row.label} · {row.count}
+                  </span>
+                )}
+              </For>
+            </div>
+          </Show>
+        )}
+      </Show>
 
       <Show when={props.plan}>
         {(plan) => (

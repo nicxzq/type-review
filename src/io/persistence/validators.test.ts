@@ -13,6 +13,7 @@ function validSettings(): ProfileSettings {
     includePunctuation: false,
     language: "en",
     pinyinScheme: "full",
+    confusionDrill: "off",
     testMode: "words" as const,
     testDurationSec: 30,
     noBackspace: false,
@@ -67,5 +68,19 @@ describe("validateSettings", () => {
     const { adaptive: _adaptive, ...rest } = validSettings();
     expect(validateSettings(rest)).toBeNull();
     expect(validateSettings({ ...rest, adaptive: "wrong" })).toBeNull();
+  });
+
+  it("accepts a valid confusionDrill family and defaults it to 'off' when absent", () => {
+    expect(validateSettings({ ...validSettings(), confusionDrill: "nasal" })?.confusionDrill).toBe(
+      "nasal",
+    );
+    const { confusionDrill: _drop, ...rest } = validSettings();
+    expect(validateSettings(rest)?.confusionDrill).toBe("off");
+  });
+
+  it("rejects an unrecognised confusionDrill value", () => {
+    expect(
+      validateSettings({ ...validSettings(), confusionDrill: "sideways" as never }),
+    ).toBeNull();
   });
 });

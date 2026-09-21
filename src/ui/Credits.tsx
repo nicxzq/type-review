@@ -130,7 +130,7 @@ export function Credits(props: CreditsProps): JSX.Element {
         <h3>License</h3>
         <p>
           TYPE itself is MIT-licensed. Source on{" "}
-          <a href="https://github.com/xiaolai/type-review" rel="noopener">
+          <a href="https://github.com/nicxzq/type-review" rel="noopener">
             GitHub
           </a>
           .

@@ -49,7 +49,11 @@ const ALLOWED_SETTINGS_KEYS: ReadonlySet<string> = new Set([
   "includePunctuation",
   "language",
   "pinyinScheme",
+  "confusionDrill",
 ]);
+
+/** Valid `confusionDrill` values: "off" or one of the three families. */
+const CONFUSION_DRILL_VALUES: ReadonlySet<string> = new Set(["off", "nasal", "retroflex", "nl"]);
 
 /**
  * Keys that the current format does not know about but were valid in
@@ -138,7 +142,14 @@ export function validateSettings(raw: unknown): ProfileSettings | null {
   if (
     raw.pinyinScheme !== undefined &&
     raw.pinyinScheme !== "full" &&
-    raw.pinyinScheme !== "xiaohe"
+    raw.pinyinScheme !== "xiaohe" &&
+    raw.pinyinScheme !== "ziranma"
+  ) {
+    return null;
+  }
+  if (
+    raw.confusionDrill !== undefined &&
+    !CONFUSION_DRILL_VALUES.has(raw.confusionDrill as string)
   ) {
     return null;
   }
@@ -162,7 +173,8 @@ export function validateSettings(raw: unknown): ProfileSettings | null {
     includeNumbers: raw.includeNumbers ?? false,
     includePunctuation: raw.includePunctuation ?? false,
     language: (raw.language as "en" | "zh" | undefined) ?? "en",
-    pinyinScheme: (raw.pinyinScheme as "full" | "xiaohe" | undefined) ?? "full",
+    pinyinScheme: (raw.pinyinScheme as "full" | "xiaohe" | "ziranma" | undefined) ?? "full",
+    confusionDrill: (raw.confusionDrill as ProfileSettings["confusionDrill"] | undefined) ?? "off",
     adaptive: {
       minAlphabetSize: raw.adaptive.minAlphabetSize,
       alphabetExpansion: raw.adaptive.alphabetExpansion,

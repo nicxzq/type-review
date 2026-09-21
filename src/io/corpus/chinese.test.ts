@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { buildChineseLayout } from "../../engine/pinyin";
+import { buildChineseLayout, type PinyinScheme } from "../../engine/pinyin";
 import { mulberry32 } from "../../engine/rng";
 import { createChineseSource, ZH_ENTRIES } from "./chinese";
 
 const ASCII_PINYIN = /^[a-z]+$/;
 const SINGLE_BMP = /^[一-鿿]$/;
+const SCHEMES: readonly PinyinScheme[] = ["full", "xiaohe", "ziranma"];
 
 describe("zh.json data contract", () => {
   it("has at least one entry", () => {
@@ -26,12 +27,18 @@ describe("zh.json data contract", () => {
         }
       });
 
-      it("builds a layout whose keys are ASCII and segments cover the whole string", () => {
-        const layout = buildChineseLayout(entry.cells.map((c) => ({ hanzi: c.h, pinyin: c.p })));
-        expect(layout.keys).toMatch(ASCII_PINYIN);
-        expect(layout.segments[0]?.start).toBe(0);
-        expect(layout.segments.at(-1)?.end).toBe(layout.keys.length);
-        expect(layout.segments.length).toBe(entry.cells.length);
+      it("builds an ASCII layout whose segments cover the string in every scheme", () => {
+        const cells = entry.cells.map((c) => ({ hanzi: c.h, pinyin: c.p }));
+        // Every syllable must be encodable by every scheme — a double-pinyin
+        // converter throws on a syllable it can't handle, so this guards
+        // against a corpus entry that only works in full pinyin.
+        for (const scheme of SCHEMES) {
+          const layout = buildChineseLayout(cells, scheme);
+          expect(layout.keys, scheme).toMatch(ASCII_PINYIN);
+          expect(layout.segments[0]?.start, scheme).toBe(0);
+          expect(layout.segments.at(-1)?.end, scheme).toBe(layout.keys.length);
+          expect(layout.segments.length, scheme).toBe(entry.cells.length);
+        }
       });
     });
   }
@@ -56,5 +63,31 @@ describe("createChineseSource", () => {
     const a = createChineseSource().pick(60, mulberry32(42));
     const b = createChineseSource().pick(60, mulberry32(42));
     expect(a?.id).toBe(b?.id);
+  });
+
+  it("adaptively filters to passages fully covered by included syllables", () => {
+    const source = createChineseSource();
+    const included = new Set(["wen", "gu", "er", "zhi", "xin"]);
+    const passage = source.pickAdaptive(20, mulberry32(1), { included, focus: "zhi" });
+    expect(passage?.id).toBe("zh-wengu");
+    expect(
+      ZH_ENTRIES.find((entry) => entry.id === passage?.id)?.cells.every((cell) =>
+        included.has(cell.p),
+      ),
+    ).toBe(true);
+  });
+
+  it("falls back to the entry with the fewest locked syllables when none is fully covered", () => {
+    const source = createChineseSource();
+    const included = new Set(["shi", "zhi"]);
+    const passage = source.pickAdaptive(20, mulberry32(1), { included, focus: "shi" });
+    const lockedCount = (entryId: string): number => {
+      const entry = ZH_ENTRIES.find((candidate) => candidate.id === entryId);
+      if (entry === undefined) return Number.POSITIVE_INFINITY;
+      return entry.cells.filter((cell) => !included.has(cell.p)).length;
+    };
+    const expectedMin = Math.min(...ZH_ENTRIES.map((entry) => lockedCount(entry.id)));
+    expect(passage).not.toBeNull();
+    expect(lockedCount(passage?.id ?? "")).toBe(expectedMin);
   });
 });

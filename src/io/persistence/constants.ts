@@ -39,6 +39,8 @@ export const ALLOWED_RESULT_KEYS: ReadonlySet<string> = new Set([
   "text",
   "metrics",
   "histogram",
+  "confusions",
+  "syllableTimes",
 ]);
 export const ALLOWED_METRICS_KEYS: ReadonlySet<string> = new Set([
   "netWpm",

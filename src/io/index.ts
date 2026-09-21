@@ -18,6 +18,8 @@ export type { RawCode } from "./corpus/code";
 export { createCodeSource } from "./corpus/code";
 export type { ChannelName, CompositeCorpusOptions } from "./corpus/composite";
 export { createCompositeCorpus } from "./corpus/composite";
+export type { ConfusionDrillSource } from "./corpus/confusion-drills";
+export { createConfusionDrillSource, DRILL_FAMILIES } from "./corpus/confusion-drills";
 export type { FileKind } from "./corpus/parse-text";
 export { inferFileKind, parseFile } from "./corpus/parse-text";
 export type { RawQuote } from "./corpus/quotes";

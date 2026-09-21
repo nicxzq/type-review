@@ -1,5 +1,6 @@
 import type { Accessor, JSX } from "solid-js";
-import { createSignal, Show } from "solid-js";
+import { createSignal, For, Show } from "solid-js";
+import type { ChineseLessonPlan } from "../../engine/pinyin";
 import type { SessionSnapshot } from "../../engine/session";
 import type { ChannelName } from "../../io";
 import { CHANNELS, KEY_SOUND_PACKS } from "../../io";
@@ -128,6 +129,8 @@ export function PracticeStage(props: PracticeStageProps): JSX.Element {
         </p>
       </Show>
 
+      <Show when={props.snap.zhPlan}>{(plan) => <ChineseAdaptiveProgress plan={plan()} />}</Show>
+
       <Show when={props.snap.remainingSec !== null}>
         <output class="countdown" aria-label="time remaining">
           <span class="countdown__value">{Math.ceil(props.snap.remainingSec ?? 0)}</span>
@@ -194,6 +197,43 @@ export function PracticeStage(props: PracticeStageProps): JSX.Element {
         </div>
       </div>
     </main>
+  );
+}
+
+function ChineseAdaptiveProgress(props: { plan: ChineseLessonPlan }): JSX.Element {
+  const includedCount = (): number => props.plan.included.length;
+  const totalCount = (): number => props.plan.syllables.length;
+  return (
+    <section class="zh-progress" aria-label="Chinese adaptive progress">
+      <div class="zh-progress__meta">
+        <span>
+          第 {includedCount()} / 共 {totalCount()} 音节
+        </span>
+        <Show when={props.plan.focus}>
+          {(focus) => (
+            <span>
+              focus <b>{focus()}</b>
+            </span>
+          )}
+        </Show>
+      </div>
+      <div class="zh-progress__list">
+        <For each={props.plan.syllables.filter((s) => s.included)}>
+          {(syllable) => (
+            <span
+              class="zh-progress__item"
+              classList={{
+                "zh-progress__item--focus": syllable.focused,
+                "zh-progress__item--mastered":
+                  (syllable.bestConfidence ?? 0) >= 1 && !syllable.focused,
+              }}
+            >
+              {syllable.pinyin}
+            </span>
+          )}
+        </For>
+      </div>
+    </section>
   );
 }
 

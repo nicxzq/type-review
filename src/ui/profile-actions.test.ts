@@ -17,6 +17,7 @@ function makeProfile(): Profile {
       includePunctuation: false,
       language: "en",
       pinyinScheme: "full",
+      confusionDrill: "off",
       testMode: "words" as const,
       testDurationSec: 30,
       noBackspace: false,

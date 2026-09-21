@@ -1017,6 +1017,30 @@ kbd {
   font-family: var(--font-mono);
   font-size: var(--fs-13);
 }
+/* Chinese runs: per-family confusable-syllable breakdown on Results. */
+.confusions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.confusions__label {
+  color: var(--color-muted);
+  font-family: var(--font-mono);
+  font-size: var(--fs-12);
+  margin-right: var(--space-2);
+  letter-spacing: var(--tracking-wide);
+}
+.confusion {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--r-2);
+  background: var(--color-warn-faint);
+  color: var(--color-warn);
+  font-family: var(--font-mono);
+  font-size: var(--fs-13);
+}
 
 /* ---- settings ----------------------------------------------- */
 .settings {
@@ -2160,6 +2184,55 @@ kbd {
   font-size: var(--fs-12);
   color: var(--color-muted);
   margin-top: var(--space-2);
+}
+
+.zh-progress {
+  width: min(100%, var(--content-max));
+  display: grid;
+  gap: var(--space-2);
+}
+
+.zh-progress__meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2) var(--space-4);
+  font-family: var(--font-mono);
+  font-size: var(--fs-12);
+  color: var(--color-muted);
+}
+
+.zh-progress__meta b {
+  color: var(--color-accent);
+}
+
+.zh-progress__list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+.zh-progress__item {
+  font-family: var(--font-mono);
+  font-size: var(--fs-12);
+  color: var(--color-muted);
+  padding: var(--space-1) var(--space-2);
+  border: var(--bw-1) solid var(--color-border);
+  border-radius: var(--r-2);
+  background: var(--color-surface);
+}
+
+.zh-progress__item--focus {
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+  background: var(--color-accent-faint);
+}
+
+.zh-progress__item--mastered {
+  color: var(--color-ok);
+  border-color: var(--color-ok);
+  background: var(--color-ok-faint);
 }
 
 /* 小鹤双拼: the full pinyin shown muted below the hanzi (keys are above). */
